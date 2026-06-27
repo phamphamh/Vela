@@ -75,6 +75,19 @@ export default function Controls() {
     if (out) flash({ kind: "ok", msg: `trafic injecté: ${out.generated ?? 0} events` });
   }, [post, flash]);
 
+  const replayDemo = useCallback(async () => {
+    const out = await post("/api/fallback");
+    if (out) flash({ kind: "ok", msg: "démo scriptée rejouée (ship → reject → ship)" });
+  }, [post, flash]);
+
+  const resetDemo = useCallback(async () => {
+    const out = await post("/api/reset");
+    if (out) {
+      setMode("accelerated");
+      flash({ kind: "ok", msg: "reset — état propre, config baseline" });
+    }
+  }, [post, flash]);
+
   // Auto-advance: fire a step every 12s while enabled.
   useEffect(() => {
     if (!auto) {
@@ -191,9 +204,34 @@ export default function Controls() {
           </button>
         </div>
 
+        <div className="mt-1 border-t border-neutral-800 pt-3">
+          <p className="mb-2 text-[10px] font-mono uppercase tracking-widest text-neutral-500">
+            Démo
+          </p>
+          <div className="grid grid-cols-2 gap-2.5">
+            {/* Scripted money-shot: ship trap -> REJECT -> ship winner */}
+            <button
+              onClick={() => void replayDemo()}
+              disabled={busy}
+              className="col-span-2 inline-flex items-center justify-center gap-2 rounded-lg bg-violet-500 px-4 py-2.5 text-sm font-semibold text-violet-950 transition-colors hover:bg-violet-400 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              ▶︎ Rejouer la démo scriptée
+            </button>
+            {/* Reset to a clean baseline so the demo is repeatable */}
+            <button
+              onClick={() => void resetDemo()}
+              disabled={busy}
+              className="col-span-2 inline-flex items-center justify-center gap-2 rounded-lg bg-neutral-900 px-4 py-2.5 text-sm font-medium text-neutral-300 ring-1 ring-neutral-700 transition-colors hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              ⟲ Reset (état propre)
+            </button>
+          </div>
+        </div>
+
         <p className="text-[10px] font-mono leading-relaxed text-neutral-600">
           Avancer = un pas de raisonnement. Auto = un pas / 12s. Veto annule le
-          dernier ship. [SIM] génère du trafic déterministe.
+          dernier ship. [SIM] génère du trafic déterministe. Rejouer = run scripté
+          garanti (ship → reject → ship). Reset = repartir propre.
         </p>
       </div>
     </div>

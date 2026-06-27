@@ -24,12 +24,11 @@ const LINKAGE: Array<{ from: number; to: number }> = [
 export async function POST() {
   try {
     const result = await prisma.$transaction(async (tx) => {
-      // Clear the stage: deactivate any currently-active config so only the
-      // fallback's winner ends up active.
-      await tx.config.updateMany({
-        where: { active: true },
-        data: { active: false },
-      });
+      // Clean slate so "Rejouer la démo" always shows exactly the scripted
+      // 3-step story (no leftover events/decisions/configs from prior clicks).
+      await tx.event.deleteMany({});
+      await tx.decision.deleteMany({});
+      await tx.config.deleteMany({});
 
       // Insert configs in order, keeping their generated ids for linkage.
       const configIds: string[] = [];
