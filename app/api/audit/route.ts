@@ -1,92 +1,101 @@
-import { headers } from "next/headers";
+// POST /api/audit — the real audit backend for the free lead-magnet tool.
+//
+// Flow:
+//   { text }  → audit the pasted copy directly.
+//   { url }   → fetch (SSRF-guarded) → extract → if too thin & no text, ask the
+//               user to paste; otherwise audit the extracted content.
+// Every successful run is persisted as an Audit row (= a lead) and returned as
+// an AuditResponse. Errors are returned as clean JSON; stack traces never leak.
+
 import { NextResponse } from "next/server";
-
-import { runAudit } from "@/lib/agents/audit";
-import { type AuditEvent } from "@/lib/agents/types";
-import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { env } from "@/lib/env";
+import { fetchLanding } from "@/lib/audit/fetch";
+import { extractContent, isThin } from "@/lib/audit/extract";
+import { runAudit } from "@/lib/audit/claude";
+import type { AuditResponse } from "@/lib/audit/types";
+import type { Prisma } from "@/lib/generated/prisma/client";
 
-// The audit runs several Opus calls; give it headroom on Vercel.
-export const maxDuration = 300;
-export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
-type AuditBody = { repoFullName?: string };
+const MAX_TEXT_LEN = 50_000;
+const MIN_TEXT_LEN = 20;
 
-/**
- * POST /api/audit — run the codebase-audit agents for a connected repo and
- * stream progress back as newline-delimited JSON (`AuditEvent` per line).
- * Self-guards via the session; the repo must be a Project the user owns.
- */
-export async function POST(request: Request) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) {
-    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+function json(body: AuditResponse, status: number) {
+  return NextResponse.json(body, { status });
+}
+
+export async function POST(req: Request) {
+  // --- Parse body --------------------------------------------------------
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return json({ ok: false, error: "Invalid request body." }, 400);
   }
 
-  if (!env.ANTHROPIC_API_KEY) {
-    return NextResponse.json(
-      { error: "Audit agent not configured (missing ANTHROPIC_API_KEY)." },
-      { status: 503 },
-    );
+  const payload = (body ?? {}) as Record<string, unknown>;
+  const url = typeof payload.url === "string" ? payload.url.trim() : "";
+  const text = typeof payload.text === "string" ? payload.text.trim() : "";
+  const email =
+    typeof payload.email === "string" && payload.email.trim()
+      ? payload.email.trim().slice(0, 320)
+      : null;
+
+  if (!url && !text) {
+    return json({ ok: false, error: "Provide a URL or paste your landing-page copy." }, 400);
   }
 
-  const body = (await request.json().catch(() => ({}))) as AuditBody;
-  if (!body.repoFullName) {
-    return NextResponse.json({ error: "repoFullName is required" }, { status: 400 });
-  }
+  try {
+    let result;
+    let source: "url" | "text";
+    let storedUrl: string | null;
 
-  // Authorize: the repo must be a Project this user owns.
-  const project = await db.project.findUnique({
-    where: {
-      userId_repoFullName: {
-        userId: session.user.id,
-        repoFullName: body.repoFullName,
-      },
-    },
-    select: { defaultBranch: true },
-  });
-  if (!project) {
-    return NextResponse.json({ error: "Repository not connected" }, { status: 404 });
-  }
-
-  // The GitHub OAuth token we read the repo with (never logged).
-  const account = await db.account.findFirst({
-    where: { userId: session.user.id, providerId: "github" },
-    select: { accessToken: true },
-  });
-  if (!account?.accessToken) {
-    return NextResponse.json({ error: "No linked GitHub account" }, { status: 400 });
-  }
-
-  const token = account.accessToken;
-  const repoFullName = body.repoFullName;
-  const branch = project.defaultBranch;
-
-  const encoder = new TextEncoder();
-  const stream = new ReadableStream({
-    async start(controller) {
-      const send = (event: AuditEvent) => {
-        controller.enqueue(encoder.encode(JSON.stringify(event) + "\n"));
-      };
-      try {
-        await runAudit({ token, repoFullName, branch, onEvent: send });
-      } catch (e) {
-        console.error("[audit] run failed", e);
-        send({
-          type: "error",
-          message: e instanceof Error ? e.message : "Audit failed.",
-        });
-      } finally {
-        controller.close();
+    if (text) {
+      // --- Pasted-copy path ------------------------------------------------
+      if (text.length < MIN_TEXT_LEN) {
+        return json({ ok: false, error: "That's too little text to audit." }, 400);
       }
-    },
-  });
+      const raw = text.slice(0, MAX_TEXT_LEN);
+      result = await runAudit({ kind: "text", raw });
+      source = "text";
+      storedUrl = url || null;
+    } else {
+      // --- Crawl path ------------------------------------------------------
+      const fetched = await fetchLanding(url);
+      if (!fetched.ok) {
+        return json({ ok: false, error: fetched.error }, 422);
+      }
 
-  return new Response(stream, {
-    headers: {
-      "Content-Type": "application/x-ndjson; charset=utf-8",
-      "Cache-Control": "no-store, no-transform",
-    },
-  });
+      const extracted = extractContent(fetched.html);
+      if (isThin(extracted)) {
+        // Likely an empty SPA shell — ask the UI to offer a paste box.
+        return json({ ok: false, needsPaste: true }, 200);
+      }
+
+      result = await runAudit({ kind: "url", extracted });
+      source = "url";
+      storedUrl = fetched.finalUrl;
+    }
+
+    // --- Persist (every run = a lead) -------------------------------------
+    const audit = await db.audit.create({
+      data: {
+        url: storedUrl,
+        email,
+        score: result.score,
+        result: result as unknown as Prisma.InputJsonValue,
+        source,
+      },
+    });
+
+    return json({ ok: true, id: audit.id, url: storedUrl, result }, 200);
+  } catch (err) {
+    // Surface a clear, safe message; log the real error server-side only.
+    const message =
+      err instanceof Error && /ANTHROPIC_API_KEY/.test(err.message)
+        ? "The audit service is not configured. Please try again later."
+        : "Something went wrong while running the audit. Please try again.";
+    console.error("[/api/audit] audit failed:", err);
+    return json({ ok: false, error: message }, 500);
+  }
 }

@@ -109,6 +109,24 @@ enum VariantKind {
   TREATMENT
 }
 
+/// A free public landing-page audit (the lead magnet). Every run is a lead:
+/// the visitor's URL — and email, when provided — captured alongside the
+/// Claude-generated result.
+model Audit {
+  id        String   @id @default(cuid())
+  url       String?
+  email     String?
+  /// 0..100 overall CRO score (mirrors result.score for cheap querying).
+  score     Int
+  /// Full AuditResult JSON (see lib/audit/types.ts).
+  result    Json
+  /// 'url' (crawled) | 'text' (pasted fallback).
+  source    String
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
 /// A customer's connected GitHub repository that we analyze and optimize.
 model Project {
   id           String  @id @default(cuid())

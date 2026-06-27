@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:oklch(0.965 0.012 84); --fg:oklch(0.245 0.014 62);
+    --card:oklch(0.99 0.007 86); --muted:oklch(0.935 0.012 84); --muted-fg:oklch(0.54 0.022 68);
+    --border:oklch(0.885 0.016 82); --primary:oklch(0.66 0.17 47); --primary-fg:oklch(0.99 0.01 90);
+    --secondary:oklch(0.93 0.013 83); --accent:oklch(0.92 0.02 78);
+    --success:oklch(0.6 0.13 150); --gold:oklch(0.76 0.13 70); --teal:oklch(0.58 0.07 210);
+    --r:6px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:var(--bg);color:var(--fg);font-family:'Geist',ui-sans-serif,system-ui,-apple-system,sans-serif;font-feature-settings:"cv11","ss01";-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;line-height:1.5}
+  ::selection{background:oklch(0.66 0.17 47 / 0.18)}
+  a{color:inherit;text-decoration:none}
+  @keyframes pulseDot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.85)}}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @keyframes march{to{background-position:24px 0}}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+  @keyframes skPulse{0%,100%{opacity:1}50%{opacity:.45}}
+</style>
+</helmet>
+
+<div style="min-height:100vh;background:var(--bg);overflow-x:hidden">
+
+  <!-- ============ NAV ============ -->
+  <nav style="position:sticky;top:0;z-index:50;backdrop-filter:saturate(1.2) blur(10px);background:color-mix(in oklch,var(--bg),transparent 18%);border-bottom:1px solid var(--border)">
+    <div style="max-width:1120px;margin:0 auto;padding:0 24px;height:60px;display:flex;align-items:center;justify-content:space-between;gap:16px">
+      <a href="Accueil.dc.html" style="display:flex;align-items:center;gap:10px">
+        <span style="width:24px;height:24px;border-radius:6px;background:var(--primary);display:inline-flex;align-items:center;justify-content:center;box-shadow:0 1px 2px oklch(0.28 0.03 60 / .18)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="oklch(0.99 0.01 90)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><polyline points="21 4 21 9 16 9"/></svg>
+        </span>
+        <span style="font-weight:600;font-size:16px;letter-spacing:-.01em">lead</span>
+        <span style="font-family:'Geist Mono',monospace;font-size:11px;color:var(--muted-fg);border:1px solid var(--border);border-radius:5px;padding:1px 6px;letter-spacing:.02em">auto-CRO</span>
+      </a>
+      <div style="display:flex;align-items:center;gap:26px;font-size:14px;color:var(--muted-fg)">
+        <a href="Accueil.dc.html" style-hover="color:var(--fg)">The product</a>
+        <a href="Accueil.dc.html#how" style-hover="color:var(--fg)">How it works</a>
+        <a href="Accueil.dc.html#compare" style-hover="color:var(--fg)">Comparison</a>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <a href="Accueil.dc.html" style="font-size:13.5px;color:var(--muted-fg);padding:0 8px;height:34px;display:none;align-items:center" data-nav-audit style-hover="color:var(--fg)">Free audit</a>
+        <a href="{{ bookUrl }}" target="_blank" style="display:inline-flex;align-items:center;gap:7px;height:36px;padding:0 14px;border-radius:6px;background:var(--primary);color:var(--primary-fg);font-weight:500;font-size:14px;box-shadow:0 1px 2px oklch(0.28 0.03 60 / .12)" style-hover="background:color-mix(in oklch,var(--primary),black 8%)">
+          Book a demo
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ============ HERO + AUDIT TOOL ============ -->
+  <header id="top" style="position:relative;padding:72px 24px 64px">
+    <div style="position:absolute;inset:0;background:radial-gradient(110% 70% at 50% -8%, oklch(0.66 0.17 47 / 0.07), transparent 58%);pointer-events:none"></div>
+    <div style="position:absolute;inset:0;background-image:radial-gradient(oklch(0.885 0.016 82) 1px, transparent 1px);background-size:24px 24px;opacity:.5;-webkit-mask-image:radial-gradient(80% 60% at 50% 12%, black, transparent 75%);mask-image:radial-gradient(80% 60% at 50% 12%, black, transparent 75%);pointer-events:none"></div>
+
+    <div style="position:relative;max-width:860px;margin:0 auto;text-align:center">
+      <div style="display:inline-flex;align-items:center;gap:8px;height:28px;padding:0 12px;border-radius:9999px;border:1px solid var(--border);background:color-mix(in oklch,var(--card),transparent 30%);font-size:12.5px;color:var(--muted-fg);margin-bottom:26px">
+        <span style="width:7px;height:7px;border-radius:9999px;background:var(--success);animation:pulseDot 1.8s ease-in-out infinite"></span>
+        <span style="font-family:'Geist Mono',monospace;letter-spacing:.01em">audit → variants → A/B test → iterate</span>
+      </div>
+
+      <h1 style="font-size:clamp(36px,6.2vw,66px);line-height:1.04;letter-spacing:-.03em;font-weight:600;margin:0 0 22px;text-wrap:balance">
+        Find out why your landing<br>
+        <span style="color:var(--primary)">isn't converting</span> — in 30 seconds.
+      </h1>
+
+      <p style="font-size:clamp(16px,1.7vw,19px);color:var(--muted-fg);max-width:620px;margin:0 auto 34px;text-wrap:pretty">
+        Free audit, no login. It's the product's first pass: then the agent <strong style="color:var(--fg);font-weight:500">drafts the variants in real code</strong> (PR + feature flag), A/B tests them and iterates. Autonomously.
+      </p>
+
+      <!-- AUDIT CARD -->
+      <div style="position:relative;max-width:680px;margin:0 auto;text-align:left;background:var(--card);border-radius:14px;box-shadow:0 1px 0 oklch(0.99 0.01 90) inset, 0 0 0 1px var(--border), 0 18px 50px -22px oklch(0.28 0.03 60 / .35);overflow:hidden">
+        <div style="display:flex;align-items:center;gap:8px;height:38px;padding:0 14px;border-bottom:1px solid var(--border);background:color-mix(in oklch,var(--muted),transparent 35%)">
+          <span style="width:9px;height:9px;border-radius:9999px;background:oklch(0.78 0.02 60)"></span>
+          <span style="width:9px;height:9px;border-radius:9999px;background:oklch(0.78 0.02 60)"></span>
+          <span style="width:9px;height:9px;border-radius:9999px;background:oklch(0.78 0.02 60)"></span>
+          <span style="font-family:'Geist Mono',monospace;font-size:11.5px;color:var(--muted-fg);margin-left:6px">lead · free audit</span>
+          <span style="margin-left:auto;font-family:'Geist Mono',monospace;font-size:11px;color:var(--muted-fg);display:inline-flex;align-items:center;gap:6px"><span style="width:6px;height:6px;border-radius:9999px;background:var(--success)"></span>no login</span>
+        </div>
+
+        <div style="padding:22px">
+          <!-- IDLE / ERROR FORM -->
+          <sc-if value="{{ showForm }}" hint-placeholder-val="{{ true }}">
+            <form onSubmit="{{ onSubmit }}">
+              <label style="font-size:12px;color:var(--muted-fg);font-family:'Geist Mono',monospace;letter-spacing:.04em;text-transform:uppercase">Your landing URL</label>
+              <div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap">
+                <input value="{{ url }}" onInput="{{ setUrl }}" placeholder="https://your-startup.com" inputmode="url" autocomplete="off" spellcheck="false"
+                  style="flex:1;min-width:200px;height:46px;border-radius:8px;border:1px solid var(--border);background:var(--bg);padding:0 14px;font-size:16px;color:var(--fg);outline:none;font-family:'Geist Mono',monospace"
+                  style-focus="border-color:var(--primary);box-shadow:0 0 0 3px oklch(0.66 0.17 47 / .18)">
+                <button type="submit" style="height:46px;padding:0 20px;border:none;border-radius:8px;background:var(--primary);color:var(--primary-fg);font-weight:600;font-size:15px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;white-space:nowrap;box-shadow:0 1px 2px oklch(0.28 0.03 60 / .14)"
+                  style-hover="background:color-mix(in oklch,var(--primary),black 8%)">
+                  Audit my landing
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                </button>
+              </div>
+            </form>
+            <sc-if value="{{ isError }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-top:12px;font-size:13px;color:oklch(0.58 0.21 28);display:flex;align-items:center;gap:7px">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                {{ errorMsg }}
+              </div>
+            </sc-if>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:16px;flex-wrap:wrap">
+              <span style="font-size:12px;color:var(--muted-fg)">Try&nbsp;:</span>
+              <button onClick="{{ fillStripe }}" style="height:26px;padding:0 10px;border-radius:9999px;border:1px solid var(--border);background:transparent;color:var(--muted-fg);font-size:12px;font-family:'Geist Mono',monospace;cursor:pointer" style-hover="border-color:var(--primary);color:var(--fg)">stripe.com</button>
+              <button onClick="{{ fillLinear }}" style="height:26px;padding:0 10px;border-radius:9999px;border:1px solid var(--border);background:transparent;color:var(--muted-fg);font-size:12px;font-family:'Geist Mono',monospace;cursor:pointer" style-hover="border-color:var(--primary);color:var(--fg)">linear.app</button>
+              <button onClick="{{ fillNotion }}" style="height:26px;padding:0 10px;border-radius:9999px;border:1px solid var(--border);background:transparent;color:var(--muted-fg);font-size:12px;font-family:'Geist Mono',monospace;cursor:pointer" style-hover="border-color:var(--primary);color:var(--fg)">notion.so</button>
+              <span style="margin-left:auto;font-size:11.5px;color:var(--muted-fg);font-family:'Geist Mono',monospace">~30s · by Claude</span>
+            </div>
+          </sc-if>
+
+          <!-- LOADING -->
+          <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:14px">
+              <div style="display:flex;align-items:center;gap:10px">
+                <span style="width:16px;height:16px;border-radius:9999px;border:2px solid var(--border);border-top-color:var(--primary);animation:spin .7s linear infinite;display:inline-block"></span>
+                <span style="font-size:14px;font-weight:500">Auditing…</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:9px;font-family:'Geist Mono',monospace;font-size:13px;background:color-mix(in oklch,var(--muted),transparent 40%);border:1px solid var(--border);border-radius:8px;padding:14px 14px">
+                <sc-for list="{{ statusList }}" as="line" hint-placeholder-count="4">
+                  <div style="display:flex;align-items:center;gap:9px;color:{{ line.color }}">
+                    <span style="width:14px;display:inline-flex;justify-content:center;flex:none">{{ line.mark }}</span>
+                    <span>{{ line.text }}</span>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px;margin-top:2px">
+                <span class="sk" style="height:11px;width:90%;border-radius:5px;background:var(--muted);animation:skPulse 1.5s ease-in-out infinite"></span>
+                <span class="sk" style="height:11px;width:78%;border-radius:5px;background:var(--muted);animation:skPulse 1.5s ease-in-out infinite .15s"></span>
+                <span class="sk" style="height:11px;width:84%;border-radius:5px;background:var(--muted);animation:skPulse 1.5s ease-in-out infinite .3s"></span>
+              </div>
+            </div>
+          </sc-if>
+
+          <!-- RESULT -->
+          <sc-if value="{{ isResult }}" hint-placeholder-val="{{ false }}">
+            <div>
+              <!-- score header -->
+              <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap">
+                <div style="position:relative;width:104px;height:104px;flex:none">
+                  <svg width="104" height="104" viewBox="0 0 120 120">
+                    <circle cx="60" cy="60" r="52" fill="none" stroke="var(--muted)" stroke-width="10"/>
+                    <circle cx="60" cy="60" r="52" fill="none" stroke="{{ scoreColor }}" stroke-width="10" stroke-linecap="round" stroke-dasharray="326.726" stroke-dashoffset="{{ gaugeOffset }}" transform="rotate(-90 60 60)"/>
+                  </svg>
+                  <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+                    <span style="font-size:30px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1;color:{{ scoreColor }}">{{ score }}</span>
+                    <span style="font-size:10px;color:var(--muted-fg);font-family:'Geist Mono',monospace">/ 100</span>
+                  </div>
+                </div>
+                <div style="flex:1;min-width:200px">
+                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                    <span style="font-size:13px;font-weight:600;color:{{ scoreColor }};font-family:'Geist Mono',monospace;text-transform:uppercase;letter-spacing:.04em">{{ scoreLabel }}</span>
+                    <span style="font-size:12px;color:var(--muted-fg);font-family:'Geist Mono',monospace">· {{ host }}</span>
+                  </div>
+                  <p style="margin:0;font-size:14.5px;color:var(--fg);line-height:1.5;text-wrap:pretty">{{ summary }}</p>
+                </div>
+              </div>
+
+              <!-- findings -->
+              <div style="margin-top:18px">
+                <div style="font-size:11px;color:var(--muted-fg);font-family:'Geist Mono',monospace;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px">What's blocking conversion</div>
+                <sc-for list="{{ findings }}" as="f" hint-placeholder-count="4">
+                  <div style="display:flex;gap:14px;padding:16px 0;border-top:1px solid var(--border)">
+                    <span style="font-family:'Geist Mono',monospace;font-size:12px;color:var(--muted-fg);padding-top:2px;flex:none">{{ f.num }}</span>
+                    <div style="flex:1;min-width:0">
+                      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:5px">
+                        <span style="display:inline-flex;align-items:center;height:19px;padding:0 8px;border-radius:9999px;font-size:11px;font-weight:600;font-family:'Geist Mono',monospace;color:{{ f.sevColor }};background:{{ f.sevBg }}">{{ f.sevTag }}</span>
+                        <span style="font-size:10.5px;color:var(--muted-fg);font-family:'Geist Mono',monospace;text-transform:uppercase;letter-spacing:.05em">{{ f.cat }}</span>
+                        <span style="font-size:14.5px;font-weight:600;flex:1;min-width:140px">{{ f.title }}</span>
+                      </div>
+                      <p style="margin:0 0 8px;font-size:13.5px;color:var(--fg);line-height:1.5">{{ f.recommendation }}</p>
+                      <div style="border-left:2px solid var(--border);padding-left:10px;font-size:12.5px;color:var(--muted-fg);font-style:italic;font-family:'Geist Mono',monospace">{{ f.evidence }}</div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+
+              <!-- result footer -->
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:18px;padding-top:18px;border-top:1px solid var(--border)">
+                <a href="{{ bookUrl }}" target="_blank" style="display:inline-flex;align-items:center;gap:8px;height:42px;padding:0 18px;border-radius:8px;background:var(--primary);color:var(--primary-fg);font-weight:600;font-size:14.5px" style-hover="background:color-mix(in oklch,var(--primary),black 8%)">
+                  Have the agent fix this
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                </a>
+                <button onClick="{{ share }}" style="height:42px;padding:0 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--fg);font-weight:500;font-size:14px;cursor:pointer;display:inline-flex;align-items:center;gap:7px" style-hover="background:var(--muted)">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+                  {{ shareLabel }}
+                </button>
+                <button onClick="{{ reset }}" style="height:42px;padding:0 12px;border:none;background:transparent;color:var(--muted-fg);font-size:13.5px;cursor:pointer;margin-left:auto" style-hover="color:var(--fg)">Audit another URL</button>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+
+      <div style="margin-top:18px;font-size:12.5px;color:var(--muted-fg)">Already adopted by growth teams done with guessing.</div>
+    </div>
+  </header>
+
+  <!-- ============ HOW IT WORKS ============ -->
+  <section id="how" style="max-width:1120px;margin:0 auto;padding:64px 24px;scroll-margin-top:70px">
+    <div style="max-width:640px;margin-bottom:40px">
+      <div style="font-size:12px;font-family:'Geist Mono',monospace;color:var(--primary);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">The loop, on autopilot</div>
+      <h2 style="font-size:clamp(26px,3.4vw,38px);line-height:1.1;letter-spacing:-.02em;font-weight:600;margin:0 0 12px">You connect your repo. The agent does the rest.</h2>
+      <p style="font-size:16px;color:var(--muted-fg);margin:0;text-wrap:pretty">And every change stays a diff you can reject. Nothing ships to prod without your sign-off.</p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:2px;background:var(--border);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+      <div style="background:var(--card);padding:22px 18px;display:flex;flex-direction:column;gap:12px;min-height:172px">
+        <div style="display:flex;align-items:center;justify-content:space-between"><span style="width:34px;height:34px;border-radius:8px;background:oklch(0.66 0.17 47 / .12);display:inline-flex;align-items:center;justify-content:center;color:var(--primary)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span><span style="font-family:'Geist Mono',monospace;font-size:12px;color:var(--muted-fg)">01</span></div>
+        <div><div style="font-weight:600;font-size:15px;margin-bottom:5px">Audit</div><div style="font-size:13px;color:var(--muted-fg);line-height:1.5">The agent reads your code and spots what's blocking conversion.</div></div>
+      </div>
+      <div style="background:var(--card);padding:22px 18px;display:flex;flex-direction:column;gap:12px;min-height:172px">
+        <div style="display:flex;align-items:center;justify-content:space-between"><span style="width:34px;height:34px;border-radius:8px;background:oklch(0.66 0.17 47 / .12);display:inline-flex;align-items:center;justify-content:center;color:var(--primary)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M6 9v6a3 3 0 0 0 3 3h6"/></svg></span><span style="font-family:'Geist Mono',monospace;font-size:12px;color:var(--muted-fg)">02</span></div>
+        <div><div style="font-weight:600;font-size:15px;margin-bottom:5px">Draft</div><div style="font-size:13px;color:var(--muted-fg);line-height:1.5">It writes the variants. Real code, a PR, behind a feature flag.</div></div>
+      </div>
+      <div style="background:var(--card);padding:22px 18px;display:flex;flex-direction:column;gap:12px;min-height:172px">
+        <div style="display:flex;align-items:center;justify-content:space-between"><span style="width:34px;height:34px;border-radius:8px;background:oklch(0.66 0.17 47 / .12);display:inline-flex;align-items:center;justify-content:center;color:var(--primary)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5"/><path d="M8 3H3v5"/><path d="M21 3l-7.5 7.5"/><path d="M3 3l7.5 7.5v10"/></svg></span><span style="font-family:'Geist Mono',monospace;font-size:12px;color:var(--muted-fg)">03</span></div>
+        <div><div style="font-weight:600;font-size:15px;margin-bottom:5px">A/B test</div><div style="font-size:13px;color:var(--muted-fg);line-height:1.5">It puts the variants live, traffic split, measurement live.</div></div>
+      </div>
+      <div style="background:var(--card);padding:22px 18px;display:flex;flex-direction:column;gap:12px;min-height:172px">
+        <div style="display:flex;align-items:center;justify-content:space-between"><span style="width:34px;height:34px;border-radius:8px;background:oklch(0.66 0.17 47 / .12);display:inline-flex;align-items:center;justify-content:center;color:var(--primary)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="20" x2="6" y2="14"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="18" y1="20" x2="18" y2="10"/></svg></span><span style="font-family:'Geist Mono',monospace;font-size:12px;color:var(--muted-fg)">04</span></div>
+        <div><div style="font-weight:600;font-size:15px;margin-bottom:5px">Measure</div><div style="font-size:13px;color:var(--muted-fg);line-height:1.5">Qualified leads, not vanity clicks. The data decides, not opinion.</div></div>
+      </div>
+      <div style="background:var(--card);padding:22px 18px;display:flex;flex-direction:column;gap:12px;min-height:172px;position:relative">
+        <div style="display:flex;align-items:center;justify-content:space-between"><span style="width:34px;height:34px;border-radius:8px;background:var(--primary);display:inline-flex;align-items:center;justify-content:center;color:var(--primary-fg)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><polyline points="21 4 21 9 16 9"/></svg></span><span style="font-family:'Geist Mono',monospace;font-size:12px;color:var(--muted-fg)">05</span></div>
+        <div><div style="font-weight:600;font-size:15px;margin-bottom:5px;display:flex;align-items:center;gap:7px">Iterate <span style="font-size:11px;color:var(--primary);font-family:'Geist Mono',monospace">↻ on loop</span></div><div style="font-size:13px;color:var(--muted-fg);line-height:1.5">Keep the winner, move to the next weak spot.</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ DIFFERENTIATION ============ -->
+  <section id="diff" style="max-width:1120px;margin:0 auto;padding:48px 24px 64px;scroll-margin-top:70px">
+    <div style="max-width:640px;margin-bottom:40px">
+      <div style="font-size:12px;font-family:'Geist Mono',monospace;color:var(--primary);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">Not yet another CRO tool</div>
+      <h2 style="font-size:clamp(26px,3.4vw,38px);line-height:1.1;letter-spacing:-.02em;font-weight:600;margin:0">An agent that ships, not a dashboard that advises.</h2>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;align-items:start">
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;display:flex;flex-direction:column;gap:14px">
+        <span style="width:38px;height:38px;border-radius:9px;background:oklch(0.6 0.13 150 / .13);display:inline-flex;align-items:center;justify-content:center;color:var(--success)"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span>
+        <h3 style="margin:0;font-size:17px;font-weight:600">We optimize qualified leads</h3>
+        <p style="margin:0;font-size:14px;color:var(--muted-fg);line-height:1.55">Not clicks, not scroll-depth. Booked demos and signups that activate. The metrics that pay salaries.</p>
+      </div>
+
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;display:flex;flex-direction:column;gap:14px">
+        <span style="width:38px;height:38px;border-radius:9px;background:oklch(0.66 0.17 47 / .13);display:inline-flex;align-items:center;justify-content:center;color:var(--primary)"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 0 1 2 2v7"/><line x1="6" y1="9" x2="6" y2="21"/></svg></span>
+        <h3 style="margin:0;font-size:17px;font-weight:600">Every change is a diff</h3>
+        <p style="margin:0;font-size:14px;color:var(--muted-fg);line-height:1.55">The agent never touches your prod quietly. A PR, review-gated by default. You merge, or you don't.</p>
+        <!-- diff card -->
+        <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--bg);margin-top:2px">
+          <div style="display:flex;align-items:center;gap:8px;height:30px;padding:0 10px;border-bottom:1px solid var(--border);background:color-mix(in oklch,var(--muted),transparent 40%);font-family:'Geist Mono',monospace;font-size:11px;color:var(--muted-fg)">
+            <span>hero.tsx</span><span style="margin-left:auto;display:inline-flex;align-items:center;gap:5px"><span style="width:6px;height:6px;border-radius:9999px;background:var(--gold)"></span>PR #1284 · review-gated</span>
+          </div>
+          <div style="font-family:'Geist Mono',monospace;font-size:11.5px;line-height:1.7">
+            <div style="display:flex;background:oklch(0.58 0.21 28 / .08);color:oklch(0.5 0.15 28);padding:1px 10px"><span style="width:14px;opacity:.6;flex:none">−</span><span>&lt;h1&gt;The platform for modern teams&lt;/h1&gt;</span></div>
+            <div style="display:flex;background:oklch(0.6 0.13 150 / .1);color:oklch(0.42 0.1 150);padding:1px 10px"><span style="width:14px;opacity:.6;flex:none">+</span><span>&lt;h1&gt;Book 30% more qualified demos&lt;/h1&gt;</span></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;height:28px;padding:0 10px;border-top:1px solid var(--border);font-family:'Geist Mono',monospace;font-size:10.5px;color:var(--muted-fg)"><span style="color:var(--success)">+1</span><span style="color:oklch(0.5 0.15 28)">−1</span><span style="margin-left:auto">awaiting your review</span></div>
+        </div>
+      </div>
+
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;display:flex;flex-direction:column;gap:14px">
+        <span style="width:38px;height:38px;border-radius:9px;background:oklch(0.58 0.07 210 / .15);display:inline-flex;align-items:center;justify-content:center;color:var(--teal)"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></span>
+        <h3 style="margin:0;font-size:17px;font-weight:600">Real code, not a page builder</h3>
+        <p style="margin:0;font-size:14px;color:var(--muted-fg);line-height:1.55">The variants ship to your repo, in your stack. No no-code layer to maintain, no third-party script slowing your page.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PROOF / DOGFOODING ============ -->
+  <section id="proof" style="background:color-mix(in oklch,var(--muted),transparent 30%);border-top:1px solid var(--border);border-bottom:1px solid var(--border);scroll-margin-top:70px">
+    <div style="max-width:1120px;margin:0 auto;padding:64px 24px">
+      <div style="max-width:720px;margin-bottom:40px">
+        <div style="font-size:12px;font-family:'Geist Mono',monospace;color:var(--primary);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">We eat our own dog food</div>
+        <h2 style="font-size:clamp(26px,3.4vw,38px);line-height:1.12;letter-spacing:-.02em;font-weight:600;margin:0 0 12px;text-wrap:balance">The audit you just ran? That's what the agent does continuously.</h2>
+        <p style="font-size:16px;color:var(--muted-fg);margin:0;text-wrap:pretty">On your repo, on loop, automatically. The free audit is just a login-free preview of the first pass — the real loop runs on your code, 24/7.</p>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:2px;background:var(--border);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:32px">
+        <div style="background:var(--card);padding:24px 20px"><div style="font-size:34px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.02em;color:var(--primary)">+34%</div><div style="font-size:12.5px;color:var(--muted-fg);margin-top:4px;line-height:1.4">more qualified leads on average, first 90 days</div></div>
+        <div style="background:var(--card);padding:24px 20px"><div style="font-size:34px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.02em">11d</div><div style="font-size:12.5px;color:var(--muted-fg);margin-top:4px;line-height:1.4">to the first winning variant</div></div>
+        <div style="background:var(--card);padding:24px 20px"><div style="font-size:34px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.02em">0</div><div style="font-size:12.5px;color:var(--muted-fg);margin-top:4px;line-height:1.4">unreviewed deploys. Ever.</div></div>
+        <div style="background:var(--card);padding:24px 20px"><div style="font-size:34px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.02em">100%</div><div style="font-size:12.5px;color:var(--muted-fg);margin-top:4px;line-height:1.4">of the code in your repo, your stack</div></div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+        <span style="font-size:12px;color:var(--muted-fg);font-family:'Geist Mono',monospace;text-transform:uppercase;letter-spacing:.05em">Already dogfooding</span>
+        <div style="display:flex;align-items:center;gap:26px;flex-wrap:wrap;opacity:.62;font-weight:600;font-size:17px;letter-spacing:-.01em;color:var(--fg)">
+          <span>Hookflow</span><span>Castl</span><span>Paretto</span><span>Northwind</span><span>DEScript</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FINAL CTA ============ -->
+  <section style="max-width:1120px;margin:0 auto;padding:80px 24px">
+    <div style="position:relative;background:var(--fg);color:var(--bg);border-radius:18px;padding:clamp(36px,6vw,64px);overflow:hidden;text-align:center">
+      <div style="position:absolute;inset:0;background-image:radial-gradient(oklch(0.99 0.01 90 / .08) 1px, transparent 1px);background-size:22px 22px;pointer-events:none"></div>
+      <div style="position:relative;max-width:600px;margin:0 auto">
+        <h2 style="font-size:clamp(26px,3.6vw,40px);line-height:1.12;letter-spacing:-.02em;font-weight:600;margin:0 0 14px;text-wrap:balance">Ready to see what the agent would find in your repo?</h2>
+        <p style="font-size:16px;color:color-mix(in oklch,var(--bg),transparent 28%);margin:0 0 28px;text-wrap:pretty">30 minutes: we connect your GitHub live and show you the first full audit — the one that goes beyond the HTML.</p>
+        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+          <a href="{{ bookUrl }}" target="_blank" style="display:inline-flex;align-items:center;gap:8px;height:48px;padding:0 24px;border-radius:9px;background:var(--primary);color:var(--primary-fg);font-weight:600;font-size:15.5px" style-hover="background:color-mix(in oklch,var(--primary),white 8%)">
+            Book a demo
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </a>
+          <a href="#top" style="display:inline-flex;align-items:center;height:48px;padding:0 20px;border-radius:9px;border:1px solid color-mix(in oklch,var(--bg),transparent 70%);color:var(--bg);font-weight:500;font-size:15px" style-hover="background:color-mix(in oklch,var(--bg),transparent 88%)">Run the free audit</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FOOTER ============ -->
+  <footer style="border-top:1px solid var(--border)">
+    <div style="max-width:1120px;margin:0 auto;padding:28px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="width:22px;height:22px;border-radius:6px;background:var(--primary);display:inline-flex;align-items:center;justify-content:center"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="oklch(0.99 0.01 90)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><polyline points="21 4 21 9 16 9"/></svg></span>
+        <span style="font-weight:600;font-size:14px">lead</span>
+        <span style="font-size:12.5px;color:var(--muted-fg)">— autonomous CRO for B2B SaaS</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:20px;font-size:12.5px;color:var(--muted-fg)">
+        <span style="font-family:'Geist Mono',monospace">© 2026 lead</span>
+        <span>·</span>
+        <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:6px;height:6px;border-radius:9999px;background:var(--success)"></span>Audit powered by Claude</span>
+      </div>
+    </div>
+  </footer>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1120,&quot;height&quot;:900},&quot;bookingUrl&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;https://cal.com/lead/demo&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Config&quot;},&quot;liveAudit&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Config&quot;}}">
+class Component extends DCLogic {
+  state = { phase: 'idle', url: '', statusIdx: 0, result: null, displayScore: 0, errorMsg: '', shared: false };
+
+  statusSteps = [
+    'Connecting to the page…',
+    'Reading the HTML…',
+    'Extracting: title, H1/H2, CTAs, proof…',
+    'Claude evaluates clarity and CTAs…',
+    'Analyzing proof and friction…',
+    'Compiling the report…'
+  ];
+
+  setUrl = (e) => this.setState({ url: e.target.value });
+  fillExample = (u) => this.setState({ url: u, phase: 'idle', errorMsg: '' });
+  onSubmit = (e) => { if (e && e.preventDefault) e.preventDefault(); this.submit(); };
+
+  normalizeUrl(raw) {
+    let u = (raw || '').trim();
+    if (!u) return null;
+    if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
+    try { const p = new URL(u); if (!/^https?:$/.test(p.protocol)) return null; return p; } catch (e) { return null; }
+  }
+
+  delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  submit = async () => {
+    if (this.state.phase === 'loading') return;
+    const p = this.normalizeUrl(this.state.url);
+    if (!p) { this.setState({ phase: 'error', errorMsg: 'Invalid URL. Try an address like https://your-startup.com' }); return; }
+    const fullUrl = p.href;
+    const host = p.hostname.replace(/^www\./, '');
+    this.setState({ phase: 'loading', statusIdx: 0, result: null, displayScore: 0, errorMsg: '' });
+    clearInterval(this._statusTimer);
+    this._statusTimer = setInterval(() => {
+      this.setState(s => ({ statusIdx: Math.min(s.statusIdx + 1, this.statusSteps.length - 1) }));
+    }, 720);
+    try {
+      const [res] = await Promise.all([this.runAudit(fullUrl, host), this.delay(2600)]);
+      res.host = host;
+      clearInterval(this._statusTimer);
+      this.setState({ phase: 'result', result: res });
+      this.animateScore(res.score);
+    } catch (err) {
+      clearInterval(this._statusTimer);
+      const res = this.demoResult(host); res.host = host;
+      this.setState({ phase: 'result', result: res });
+      this.animateScore(res.score);
+    }
+  };
+
+  async fetchContent(fullUrl) {
+    try {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 8000);
+      const r = await fetch('https://r.jina.ai/' + fullUrl, { signal: ctrl.signal });
+      clearTimeout(t);
+      if (r.ok) { const txt = await r.text(); return (txt || '').slice(0, 3500); }
+    } catch (e) {}
+    return '';
+  }
+
+  async runAudit(fullUrl, host) {
+    const live = this.props.liveAudit ?? true;
+    if (!live || !(window.claude && window.claude.complete)) { await this.delay(400); return this.demoResult(host); }
+    const content = await this.fetchContent(fullUrl);
+    const prompt = [
+      'You are a demanding B2B SaaS growth lead and CRO expert. Audit the landing page below from a conversion standpoint.',
+      'Reply STRICTLY with a valid JSON object, no text or markdown around it.',
+      'Exact schema: {"score": <integer 0-100>, "summary": "<1-2 sentences in English>", "findings": [{"title":"<short>","severity":"P0|P1|P2|P3","category":"clarity|cta|proof|friction|value","recommendation":"<1 sentence, concrete action in English>","evidence":"<short quote from the page>"}]}',
+      'Give EXACTLY 4 findings, from most severe (P0) to least. Be concrete, critical and specific. In evidence, quote real text from the page.',
+      'URL: ' + fullUrl,
+      'Content extracted from the page:',
+      '"""', content || ("(content unavailable — reason from what you know about " + host + ')'), '"""'
+    ].join('\n');
+    for (let i = 0; i < 2; i++) {
+      try {
+        const txt = await window.claude.complete(prompt);
+        const parsed = this.parse(txt);
+        if (parsed) return parsed;
+      } catch (e) {}
+    }
+    return this.demoResult(host);
+  }
+
+  parse(txt) {
+    if (!txt) return null;
+    const a = txt.indexOf('{'); const b = txt.lastIndexOf('}');
+    if (a < 0 || b < 0) return null;
+    try {
+      const o = JSON.parse(txt.slice(a, b + 1));
+      if (typeof o.score !== 'number' || !Array.isArray(o.findings) || !o.findings.length) return null;
+      o.score = Math.max(0, Math.min(100, Math.round(o.score)));
+      o.summary = String(o.summary || '');
+      o.findings = o.findings.slice(0, 5).map(f => ({
+        title: String(f.title || '').slice(0, 80),
+        severity: ['P0', 'P1', 'P2', 'P3'].includes(f.severity) ? f.severity : 'P2',
+        category: String(f.category || 'clarity'),
+        recommendation: String(f.recommendation || ''),
+        evidence: String(f.evidence || '')
+      }));
+      return o;
+    } catch (e) { return null; }
+  }
+
+  animateScore(target) {
+    cancelAnimationFrame(this._raf);
+    const start = performance.now(); const dur = 950;
+    const tick = (now) => {
+      const k = Math.min(1, (now - start) / dur);
+      const e = 1 - Math.pow(1 - k, 3);
+      this.setState({ displayScore: Math.round(target * e) });
+      if (k < 1) this._raf = requestAnimationFrame(tick);
+    };
+    this._raf = requestAnimationFrame(tick);
+  }
+
+  reset = () => { clearInterval(this._statusTimer); cancelAnimationFrame(this._raf); this.setState({ phase: 'idle', result: null, displayScore: 0, errorMsg: '' }); };
+
+  share = () => {
+    try { navigator.clipboard && navigator.clipboard.writeText('https://lead.dev/audit/' + Math.random().toString(36).slice(2, 8)); } catch (e) {}
+    this.setState({ shared: true });
+    clearTimeout(this._shareTimer);
+    this._shareTimer = setTimeout(() => this.setState({ shared: false }), 1800);
+  };
+
+  demoResult(host) {
+    return {
+      score: 61,
+      summary: host + ' has a decent promise but it is buried: the primary CTA lacks clarity and proof arrives too late to reassure a B2B buyer.',
+      findings: [
+        { title: 'The primary CTA is generic', severity: 'P0', category: 'cta', recommendation: 'Replace “Get started” with an outcome-driven action (“See a demo, 20 min”). One primary CTA above the fold.', evidence: 'Hero button: “Get started”' },
+        { title: 'The value proposition stays abstract', severity: 'P1', category: 'clarity', recommendation: "Open with the concrete outcome for the customer, not the product category. Quantify (time saved, leads, $).", evidence: 'H1: “The platform for modern teams”' },
+        { title: 'No proof before the ask', severity: 'P1', category: 'proof', recommendation: 'Move customer logos + 1 hard metric just under the hero. Proof must precede the form.', evidence: 'First customer logo at ~2200px of scroll' },
+        { title: 'Form is too long', severity: 'P2', category: 'friction', recommendation: 'Go from 6 to 2 fields (email + URL). Ask the rest after the meeting is booked.', evidence: 'Demo form: 6 required fields' }
+      ]
+    };
+  }
+
+  componentWillUnmount() { clearInterval(this._statusTimer); cancelAnimationFrame(this._raf); clearTimeout(this._shareTimer); }
+
+  renderVals() {
+    const s = this.state;
+    const sevMap = {
+      P0: { c: 'oklch(0.55 0.21 28)', b: 'oklch(0.58 0.21 28 / 0.1)', l: 'Critical' },
+      P1: { c: 'oklch(0.55 0.17 47)', b: 'oklch(0.66 0.17 47 / 0.13)', l: 'High' },
+      P2: { c: 'oklch(0.46 0.1 70)', b: 'oklch(0.76 0.13 70 / 0.18)', l: 'Medium' },
+      P3: { c: 'oklch(0.5 0.022 68)', b: 'oklch(0.54 0.022 68 / 0.1)', l: 'Minor' }
+    };
+    const r = s.result;
+    const score = s.displayScore;
+    const circ = 326.726;
+    const gaugeOffset = (circ * (1 - score / 100)).toFixed(2);
+    const scoreColor = score >= 75 ? 'oklch(0.55 0.13 150)' : score >= 50 ? 'oklch(0.6 0.17 47)' : 'oklch(0.55 0.21 28)';
+    const scoreLabel = score >= 75 ? 'Solid' : score >= 50 ? 'Needs work' : 'Urgent';
+    const findings = r ? r.findings.map((f, i) => {
+      const m = sevMap[f.severity] || sevMap.P2;
+      return { title: f.title, recommendation: f.recommendation, evidence: f.evidence, num: String(i + 1).padStart(2, '0'), sevColor: m.c, sevBg: m.b, sevTag: f.severity + ' · ' + m.l, cat: String(f.category || '').toUpperCase() };
+    }) : [];
+    const statusList = this.statusSteps.slice(0, s.statusIdx + 1).map((t, i) => {
+      const done = i < s.statusIdx;
+      return { text: t, mark: done ? '✓' : '▸', color: done ? 'var(--muted-fg)' : 'var(--fg)' };
+    });
+    return {
+      bookUrl: this.props.bookingUrl ?? 'https://cal.com/lead/demo',
+      isIdle: s.phase === 'idle', isLoading: s.phase === 'loading', isResult: s.phase === 'result', isError: s.phase === 'error',
+      showForm: s.phase === 'idle' || s.phase === 'error',
+      url: s.url, setUrl: this.setUrl, onSubmit: this.onSubmit, submit: this.submit, reset: this.reset, share: this.share,
+      fillStripe: () => this.fillExample('https://stripe.com'),
+      fillLinear: () => this.fillExample('https://linear.app'),
+      fillNotion: () => this.fillExample('https://notion.so'),
+      statusList, errorMsg: s.errorMsg,
+      score, gaugeOffset, scoreColor, scoreLabel,
+      summary: r ? r.summary : '', host: r ? r.host : '', findings,
+      shareLabel: s.shared ? 'Link copied ✓' : 'Share the report'
+    };
+  }
+}
+</script>
+</body>
+</html>
