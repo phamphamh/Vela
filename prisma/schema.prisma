@@ -99,7 +99,9 @@ enum Surface {
 
 enum ExperimentStatus {
   DRAFT
+  QUEUED
   RUNNING
+  CONCLUSIVE
   COMPLETED
   ABANDONED
 }
@@ -148,12 +150,30 @@ model Project {
 
   experiments Experiment[]
   events      Event[]
+  audits      ProjectAudit[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([userId, repoFullName])
   @@index([userId])
+}
+
+/// A persisted codebase-audit run (the onboarding/dashboard "Surfaces" data).
+/// Stores the full AuditResult (see lib/agents/types.ts) so the dashboard can
+/// show detected surfaces + ranked opportunities without re-running the agent.
+model ProjectAudit {
+  id        String  @id @default(cuid())
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String
+  /// 0–100 average surface health (mirrors the result for cheap querying).
+  score     Int
+  /// Full AuditResult JSON.
+  result    Json
+
+  createdAt DateTime @default(now())
+
+  @@index([projectId, createdAt])
 }
 
 /// A single A/B test the orchestrator runs on a project's surface.
@@ -163,7 +183,20 @@ model Experiment {
   projectId  String
   surface    Surface
   status     ExperimentStatus @default(DRAFT)
+  /// Short, human title shown in the dashboard (e.g. "Outcome-led hero headline").
+  title      String?
   hypothesis String?
+
+  /// % of traffic routed to the treatment variant (the rest sees control).
+  split Int @default(50)
+
+  // The change is delivered as a reviewable PR; merging + deploying ships the
+  // code, and the SDK only serves the experiment once it is RUNNING. These track
+  // the PR the launch agent opened. `targetPath` is the file it edited.
+  prNumber   Int?
+  prUrl      String?
+  prBranch   String?
+  targetPath String?
 
   variants Variant[]
 
@@ -185,6 +218,10 @@ model Variant {
   label        String
   // Reference to the change the agent produced (e.g. a PR / branch / patch ref).
   changeRef    String?
+  /// The human-readable copy/value this variant renders (control or treatment).
+  content      String?
+  /// Relative traffic weight (control vs treatment); see Experiment.split.
+  weight       Int     @default(50)
 
   // Lightweight rollup metrics; detailed events live in the Event table.
   impressions Int @default(0)

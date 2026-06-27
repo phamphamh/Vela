@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { Activity, MousePointerClick } from "lucide-react";
 
+import { LaunchExperiment } from "@/components/dashboard/launch-experiment";
 import { SetupSdkButton } from "@/components/dashboard/setup-sdk-button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -133,30 +134,34 @@ export async function RealtimeOverview() {
           </Card>
         </div>
       ) : (
-        metrics.topClicks.length > 0 && (
-          // What visitors are actually clicking.
-          <Card>
-            <CardContent className="space-y-2.5 py-4">
-              <div className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
-                <MousePointerClick className="size-3.5" />
-                Most clicked
-              </div>
-              <div className="space-y-1.5">
-                {metrics.topClicks.map((c) => (
-                  <div
-                    key={c.name}
-                    className="flex items-center justify-between gap-3 text-sm"
-                  >
-                    <span className="truncate text-foreground">{c.name}</span>
-                    <span className="shrink-0 font-mono tabular-nums text-muted-foreground">
-                      {c.count.toLocaleString()}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )
+        // Tracking is live — the next step is to launch a real experiment.
+        <div className="space-y-3">
+          <LaunchExperiment />
+          {metrics.topClicks.length > 0 && (
+            // What visitors are actually clicking.
+            <Card>
+              <CardContent className="space-y-2.5 py-4">
+                <div className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+                  <MousePointerClick className="size-3.5" />
+                  Most clicked
+                </div>
+                <div className="space-y-1.5">
+                  {metrics.topClicks.map((c) => (
+                    <div
+                      key={c.name}
+                      className="flex items-center justify-between gap-3 text-sm"
+                    >
+                      <span className="truncate text-foreground">{c.name}</span>
+                      <span className="shrink-0 font-mono tabular-nums text-muted-foreground">
+                        {c.count.toLocaleString()}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       )}
     </section>
   );

@@ -12,6 +12,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { LaunchExperiment } from "@/components/dashboard/launch-experiment";
 import { MeterBar } from "@/components/dashboard/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -62,6 +63,12 @@ export function ReportStep({
           surfaces.reduce((n, s) => n + s.score, 0) / surfaces.length,
         )
       : 0;
+
+  // The highest-impact opportunity seeds the launch agent (High → Medium → Low).
+  const rank: Record<Impact, number> = { High: 0, Medium: 1, Low: 2 };
+  const topOpportunity = surfaces
+    .flatMap((s) => s.advice.map((a) => ({ surface: s.key, advice: a })))
+    .sort((x, y) => rank[x.advice.impact] - rank[y.advice.impact])[0];
 
   const summary = [
     { label: "Surfaces detected", value: String(surfaces.length) },
@@ -212,32 +219,30 @@ export function ReportStep({
         })}
       </div>
 
-      {/* CTA */}
-      <Card className="border-primary/30 bg-primary/[0.03]">
-        <CardContent className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <div className="text-sm font-medium">
-              Ready to ship your first experiment?
-            </div>
-            <p className="text-xs text-muted-foreground">
-              We&apos;ll draft the top opportunity as a reviewable PR — you
-              approve before anything goes live.
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
+      {/* CTA — launch the first real A/B test from the top opportunity. */}
+      {surfaces.length > 0 && (
+        <div className="space-y-3">
+          <LaunchExperiment
+            hint={
+              topOpportunity
+                ? {
+                    surface: topOpportunity.surface,
+                    title: topOpportunity.advice.title,
+                    rationale: topOpportunity.advice.rationale,
+                  }
+                : undefined
+            }
+          />
+          <div className="text-center">
             <Button variant="ghost" size="sm" asChild>
-              <Link href="/dashboard">Skip to dashboard</Link>
-            </Button>
-            <Button size="sm" asChild>
-              <Link href="/dashboard/experiments">
-                <Sparkles className="size-4" />
-                Create first experiment
+              <Link href="/dashboard" className="text-muted-foreground">
+                Skip to dashboard
                 <ArrowRight className="size-4" />
               </Link>
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      )}
     </div>
   );
 }

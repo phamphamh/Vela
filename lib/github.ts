@@ -126,6 +126,21 @@ export async function getFullFileContent(
   return Buffer.from(data.content, "base64").toString("utf8");
 }
 
+/** Whether a pull request has been merged. Reads use the user's OAuth token. */
+export async function isPrMerged(
+  token: string,
+  fullName: string,
+  prNumber: number,
+): Promise<boolean> {
+  const res = await fetch(`${GH}/repos/${fullName}/pulls/${prNumber}`, {
+    headers: ghHeaders(token),
+    cache: "no-store",
+  });
+  if (!res.ok) return false;
+  const data = (await res.json()) as { merged?: boolean; merged_at?: string | null };
+  return Boolean(data.merged || data.merged_at);
+}
+
 /* --- writes (PRs) — use a GitHub App installation token ----------------- */
 
 async function ghPost<T>(
@@ -160,7 +175,9 @@ export async function commitFilesAndOpenPr(
     message: string;
     title: string;
     body: string;
-    files: { path: string; content: string }[];
+    // `content` is UTF-8 text by default; pass encoding "base64" for binary
+    // files (e.g. a committed preview PNG) where `content` is already base64.
+    files: { path: string; content: string; encoding?: "utf8" | "base64" }[];
   },
 ): Promise<{ url: string; number: number; branch: string }> {
   // 1. Resolve the base branch head + its tree.
@@ -180,10 +197,14 @@ export async function commitFilesAndOpenPr(
   // 2. Blob each file, then build a tree on top of the base tree.
   const tree = await Promise.all(
     opts.files.map(async (f) => {
+      const content =
+        f.encoding === "base64"
+          ? f.content
+          : Buffer.from(f.content, "utf8").toString("base64");
       const blob = await ghPost<{ sha: string }>(
         token,
         `${GH}/repos/${fullName}/git/blobs`,
-        { content: Buffer.from(f.content, "utf8").toString("base64"), encoding: "base64" },
+        { content, encoding: "base64" },
       );
       return { path: f.path, mode: "100644", type: "blob", sha: blob.sha };
     }),

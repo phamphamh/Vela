@@ -1,22 +1,20 @@
+import { headers } from "next/headers";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import {
   ArrowLeft,
+  ArrowRight,
   CheckCircle2,
   Clock,
-  ExternalLink,
-  GitPullRequest,
+  FileCode2,
   Sparkles,
   TrendingUp,
   Users,
 } from "lucide-react";
 
-import {
-  MeterBar,
-  StatusBadge,
-  type ExperimentStatus,
-} from "@/components/dashboard/status-badge";
+import { ExperimentControls } from "@/components/dashboard/experiment-controls";
+import { MeterBar, StatusBadge, type ExperimentStatus } from "@/components/dashboard/status-badge";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -25,183 +23,57 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { auth } from "@/lib/auth";
+import { getExperimentDetail } from "@/lib/experiments";
 import { cn } from "@/lib/utils";
 
-/* --- mock data -------------------------------------------------------- */
-
-type DiffLine = { type: "ctx" | "add" | "del" | "meta"; text: string };
-
-type Variant = {
-  key: string;
-  name: string;
-  kind: "control" | "treatment";
-  split: number; // traffic %
-  visitors: number;
-  conversions: number;
-  rate: number; // %
-  reasoning?: string;
-  file?: string;
-  diff?: DiffLine[];
-  winner?: boolean;
-};
-
-type ExperimentDetail = {
-  id: string;
-  title: string;
-  surface: string;
-  status: ExperimentStatus;
-  hypothesis: string;
-  running: string;
-  goal: string;
-  pr: { number: number; repo: string; branch: string; state: string };
-  uplift: number;
-  confidence: number;
-  totalVisitors: number;
-  toSignificance: string;
-  variants: Variant[];
-};
-
-const experiment: ExperimentDetail = {
-  id: "142",
-  title: "Pricing emphasis",
-  surface: "Paywall",
-  status: "RUNNING",
-  hypothesis:
-    "Leading the paywall with annual savings (vs. the monthly price) reduces price anchoring friction and lifts checkout starts.",
-  running: "6d 4h",
-  goal: "Checkout started",
-  pr: { number: 318, repo: "acme/web", branch: "vela/paywall-annual-emphasis", state: "Open" },
-  uplift: 12.4,
-  confidence: 95,
-  totalVisitors: 3201,
-  toSignificance: "~2 days",
-  variants: [
-    {
-      key: "control",
-      name: "Control",
-      kind: "control",
-      split: 50,
-      visitors: 1602,
-      conversions: 184,
-      rate: 11.5,
-    },
-    {
-      key: "B",
-      name: "Annual-first",
-      kind: "treatment",
-      split: 50,
-      visitors: 1599,
-      conversions: 207,
-      rate: 12.9,
-      winner: true,
-      file: "components/paywall/PlanCard.tsx",
-      reasoning:
-        "Surface the annual price as the primary number with a 'save 20%' chip, demote the monthly equivalent to a sub-label. This reframes the anchor around yearly value while keeping monthly available, which the hypothesis predicts will raise checkout starts.",
-      diff: [
-        { type: "meta", text: "components/paywall/PlanCard.tsx" },
-        { type: "ctx", text: "   <div className=\"plan-card\">" },
-        { type: "ctx", text: "     <h3>{plan.name}</h3>" },
-        { type: "del", text: "     <span className=\"price\">${plan.monthly}/mo</span>" },
-        { type: "del", text: "     <span className=\"period\">billed monthly</span>" },
-        { type: "add", text: "     <span className=\"price\">${plan.annual}/yr</span>" },
-        { type: "add", text: "     <Badge tone=\"accent\">Save 20%</Badge>" },
-        { type: "add", text: "     <span className=\"period\">${plan.monthly}/mo billed annually</span>" },
-        { type: "ctx", text: "     <Button>Start free trial</Button>" },
-        { type: "ctx", text: "   </div>" },
-      ],
-    },
-  ],
-};
-
-const metrics = [
-  {
-    label: "Uplift",
-    value: `+${experiment.uplift}%`,
-    sub: "treatment vs. control",
-    accent: true,
-    icon: TrendingUp,
-  },
-  {
-    label: "Confidence",
-    value: `${experiment.confidence}%`,
-    sub: "statistical significance",
-    icon: CheckCircle2,
-  },
-  {
-    label: "Visitors",
-    value: experiment.totalVisitors.toLocaleString(),
-    sub: "in test, both arms",
-    icon: Users,
-  },
-  {
-    label: "To significance",
-    value: experiment.toSignificance,
-    sub: "at current traffic",
-    icon: Clock,
-  },
-];
-
-/* --- diff renderer ---------------------------------------------------- */
-
-function Diff({ lines }: { lines: DiffLine[] }) {
-  return (
-    <div className="overflow-x-auto rounded-md border border-border bg-muted/30 font-mono text-xs leading-relaxed">
-      {lines.map((line, i) => {
-        if (line.type === "meta") {
-          return (
-            <div
-              key={i}
-              className="flex items-center gap-2 border-b border-border bg-secondary/60 px-3 py-1.5 text-muted-foreground"
-            >
-              <GitPullRequest className="size-3.5" />
-              {line.text}
-            </div>
-          );
-        }
-        const prefix =
-          line.type === "add" ? "+" : line.type === "del" ? "−" : " ";
-        return (
-          <div
-            key={i}
-            className={cn(
-              "whitespace-pre px-3 py-0.5",
-              line.type === "add" &&
-                "bg-success/10 text-foreground",
-              line.type === "del" &&
-                "bg-destructive/10 text-muted-foreground",
-            )}
-          >
-            <span
-              className={cn(
-                "mr-3 select-none",
-                line.type === "add" && "text-success",
-                line.type === "del" && "text-destructive",
-                line.type === "ctx" && "text-muted-foreground/40",
-              )}
-            >
-              {prefix}
-            </span>
-            {line.text}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-/* --- page ------------------------------------------------------------- */
+const CONF_TARGET = 0.95;
 
 export default async function ExperimentDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await params; // mock: same experiment for any id
-  const e = experiment;
+  const { id } = await params;
+  const session = await auth.api.getSession({ headers: await headers() });
+  const e = session ? await getExperimentDetail(session.user.id, id) : null;
+  if (!e) notFound();
+
+  const conf = e.confidence ?? 0;
+  const eligible = conf >= CONF_TARGET && e.status === "RUNNING";
+  const treatmentLeads = (e.uplift ?? 0) > 0;
+  const hasData = e.visitors > 0;
+
+  const metrics = [
+    {
+      label: "Uplift",
+      value: e.uplift !== null ? `${e.uplift >= 0 ? "+" : ""}${(e.uplift * 100).toFixed(1)}%` : "—",
+      sub: "treatment vs. control",
+      accent: e.uplift !== null && e.uplift >= 0,
+      icon: TrendingUp,
+    },
+    {
+      label: "Confidence",
+      value: e.confidence !== null ? `${Math.round(e.confidence * 100)}%` : "—",
+      sub: "statistical significance",
+      icon: CheckCircle2,
+    },
+    {
+      label: "Visitors",
+      value: e.visitors.toLocaleString(),
+      sub: "in test, both arms",
+      icon: Users,
+    },
+    {
+      label: "Running",
+      value: e.running,
+      sub: "since launch",
+      icon: Clock,
+    },
+  ];
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-7">
-      {/* breadcrumb / back */}
       <Link
         href="/dashboard/experiments"
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
@@ -212,53 +84,53 @@ export default async function ExperimentDetailPage({
 
       {/* header */}
       <div className="space-y-4">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0 space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="outline">{e.surface}</Badge>
-              <StatusBadge status={e.status} />
-              <span className="font-mono text-xs text-muted-foreground">
-                #{e.id} · running {e.running}
-              </span>
-            </div>
-            <h1 className="text-2xl font-semibold tracking-tight">{e.title}</h1>
+        <div className="min-w-0 space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="outline">{e.surface}</Badge>
+            <StatusBadge status={e.status as ExperimentStatus} />
+            <span className="font-mono text-xs text-muted-foreground">
+              #{e.prNumber ?? e.id.slice(0, 6)} · {e.running}
+            </span>
+          </div>
+          <h1 className="text-2xl font-semibold tracking-tight">{e.title}</h1>
+          {e.hypothesis && (
             <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
               {e.hypothesis}
             </p>
-          </div>
+          )}
         </div>
 
-        {/* decision controls */}
-        <div className="flex flex-wrap items-center gap-2">
-          <Button size="sm">
-            <Sparkles className="size-4" />
-            Ship winner
-          </Button>
-          <Button size="sm" variant="outline">
-            Extend
-          </Button>
-          <Button size="sm" variant="outline">
-            Abandon
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="text-muted-foreground"
-            disabled
-          >
-            Roll back
-          </Button>
-          <div className="ml-auto">
-            <Button size="sm" variant="ghost" asChild>
-              <a href="#" className="text-muted-foreground">
-                <GitPullRequest className="size-4" />
-                PR #{e.pr.number}
-                <ExternalLink className="size-3.5" />
-              </a>
-            </Button>
+        <ExperimentControls
+          id={e.id}
+          status={e.status}
+          prUrl={e.prUrl}
+          prNumber={e.prNumber}
+        />
+
+        {e.status === "QUEUED" && (
+          <div className="flex items-start gap-2 rounded-md border border-primary/25 bg-primary/[0.04] px-3 py-2.5 text-xs leading-relaxed text-muted-foreground">
+            <ArrowRight className="mt-0.5 size-3.5 shrink-0 text-primary" />
+            <span>
+              <strong className="font-medium text-foreground">
+                Merge the PR to launch.
+              </strong>{" "}
+              Lead detects the merge and starts splitting traffic{" "}
+              {100 - e.split}/{e.split} automatically — or hit “Activate now” if
+              you&apos;ve already deployed.
+            </span>
           </div>
-        </div>
+        )}
       </div>
+
+      {/* visual before/after preview (same image embedded in the PR) */}
+      <Card className="overflow-hidden p-0">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={`/api/experiments/${e.id}/preview.svg`}
+          alt={`Before and after preview of ${e.title}`}
+          className="w-full"
+        />
+      </Card>
 
       {/* live metrics */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -294,14 +166,23 @@ export default async function ExperimentDetailPage({
           <div className="flex items-center justify-between text-sm">
             <span className="font-medium">Statistical confidence</span>
             <span className="font-mono tabular-nums text-muted-foreground">
-              {e.confidence}% / 95% target
+              {Math.round(conf * 100)}% / 95% target
             </span>
           </div>
-          <MeterBar value={e.confidence} tone="success" />
+          <MeterBar value={conf * 100} tone={eligible ? "success" : "primary"} />
           <p className="text-xs text-muted-foreground">
-            Measuring{" "}
-            <span className="font-medium text-foreground">{e.goal}</span>. The
-            treatment has crossed the 95% threshold — eligible to ship.
+            {!hasData ? (
+              <>
+                No traffic yet. Once the experiment is live and visitors flow in,
+                uplift and confidence build here in real time.
+              </>
+            ) : eligible ? (
+              <>
+                The treatment crossed the 95% threshold — eligible to ship.
+              </>
+            ) : (
+              <>Collecting data — keep the test running until it reaches 95%.</>
+            )}
           </p>
         </CardContent>
       </Card>
@@ -311,26 +192,29 @@ export default async function ExperimentDetailPage({
         <div className="flex items-center gap-2">
           <h2 className="text-lg font-semibold tracking-tight">Variants</h2>
           <Badge variant="secondary" className="tabular-nums">
-            {e.variants.length}
+            2
           </Badge>
         </div>
 
-        {e.variants.map((v) => (
-          <Card key={v.key} className={cn(v.winner && "border-primary/40")}>
+        {([
+          { v: e.control, kind: "control" as const, winner: false },
+          { v: e.treatment, kind: "treatment" as const, winner: treatmentLeads && hasData },
+        ]).map(({ v, kind, winner }) => (
+          <Card key={kind} className={cn(winner && "border-primary/40")}>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2.5">
+              <CardTitle className="flex flex-wrap items-center gap-2.5">
                 <span className="font-mono text-xs text-muted-foreground">
-                  {v.kind === "control" ? "A" : v.key}
+                  {kind === "control" ? "A" : "B"}
                 </span>
-                {v.name}
-                {v.kind === "control" ? (
+                {v.label}
+                {kind === "control" ? (
                   <Badge variant="secondary">Control</Badge>
                 ) : (
                   <Badge variant="outline" className="border-primary/40 text-primary">
                     Treatment
                   </Badge>
                 )}
-                {v.winner && (
+                {winner && (
                   <Badge className="gap-1 bg-success text-success-foreground">
                     <CheckCircle2 className="size-3" />
                     Leading
@@ -338,54 +222,61 @@ export default async function ExperimentDetailPage({
                 )}
               </CardTitle>
               <CardDescription className="font-mono text-xs">
-                {v.split}% traffic · {v.visitors.toLocaleString()} visitors ·{" "}
+                {kind === "control" ? 100 - e.split : e.split}% traffic ·{" "}
+                {v.impressions.toLocaleString()} visitors ·{" "}
                 {v.conversions.toLocaleString()} conversions
               </CardDescription>
             </CardHeader>
 
             <CardContent className="space-y-4">
-              {/* per-variant conversion rate */}
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-1">
                   <div className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
                     Conv. rate
                   </div>
                   <div className="font-mono text-xl font-semibold tabular-nums">
-                    {v.rate}%
+                    {(v.rate * 100).toFixed(1)}%
                   </div>
                 </div>
                 <div className="col-span-2 flex flex-col justify-center gap-1.5">
-                  <MeterBar
-                    value={(v.rate / 15) * 100}
-                    tone={v.winner ? "success" : "muted"}
-                  />
+                  <MeterBar value={Math.min(100, v.rate * 100 * 5)} tone={winner ? "success" : "muted"} />
                   <span className="font-mono text-[11px] text-muted-foreground">
-                    {v.conversions} / {v.visitors.toLocaleString()}
+                    {v.conversions} / {v.impressions.toLocaleString()}
                   </span>
                 </div>
               </div>
 
-              {/* reasoning + diff for treatments */}
-              {v.kind === "treatment" && (
+              {/* the copy this variant renders + (for treatment) how it ships */}
+              <Separator />
+              <div className="space-y-1.5">
+                <div className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
+                  Renders
+                </div>
+                <p className="rounded-md border border-border bg-muted/20 px-3 py-2 text-sm leading-snug">
+                  {v.content ?? "—"}
+                </p>
+              </div>
+
+              {kind === "treatment" && (
                 <>
-                  <Separator />
-                  {v.reasoning && (
+                  {e.hypothesis && (
                     <div className="space-y-1.5">
                       <div className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
                         <Sparkles className="size-3.5 text-primary" />
                         Agent reasoning
                       </div>
                       <p className="text-sm leading-relaxed text-muted-foreground">
-                        {v.reasoning}
+                        {e.hypothesis}
                       </p>
                     </div>
                   )}
-                  {v.diff && (
-                    <div className="space-y-1.5">
-                      <div className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">
-                        Code change
-                      </div>
-                      <Diff lines={v.diff} />
+                  {e.targetPath && (
+                    <div className="flex items-center gap-1.5 font-mono text-[11px] text-muted-foreground">
+                      <FileCode2 className="size-3.5" />
+                      {e.targetPath}
+                      <span className="text-muted-foreground/60">
+                        · served to the B cohort via the Lead SDK flag
+                      </span>
                     </div>
                   )}
                 </>

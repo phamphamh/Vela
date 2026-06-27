@@ -201,8 +201,16 @@ Next steps (not yet done):
   reads the repo over the REST API (no clone). `POST /api/audit` streams progress
   as NDJSON (`AuditEvent`); the onboarding Audit → Report steps consume it.
   Requires `ANTHROPIC_API_KEY` in `.env`.
-- Persist audit results (e.g. as `Experiment` drafts) so the dashboard and the
-  report's "Draft" buttons work off real data instead of re-running the audit.
+- ✅ **Audit is persisted + the dashboard reads real data.** Each onboarding
+  codebase audit is saved as a `ProjectAudit` (full `AuditResult` JSON + avg score)
+  in `POST /api/audit/repo`. The **Surfaces** page (`app/dashboard/surfaces`) renders
+  that audit — detected surfaces, issues, and a ranked opportunity backlog where each
+  row has a **Launch test** button (`LaunchOpportunityButton`) that fires the launch
+  agent → PR. The **Experiments** list + **detail** pages now read real experiments
+  (`lib/experiments.ts`) with uplift/confidence computed from `Variant` rollups via a
+  two-proportion z-test (`lib/stats.ts`); detail has gated **Activate / Ship winner /
+  Abandon** controls (`POST /api/experiments/[id]/{status,decision}`). Overview, Agent,
+  and Insights pages are still mock.
 - ✅ **Visitor tracking is real.** Our own SDK (`public/sdk.js`) auto-captures
   pageviews + clicks (and `data-lead-conversion` / `lead('conversion', …)`) on the
   customer's site and beacons batches to `POST /api/ingest` (CORS, keyed by
@@ -211,9 +219,34 @@ Next steps (not yet done):
   **Live tracking** band (`components/dashboard/realtime-overview.tsx`) shows real
   visitors / pageviews / clicks / conversions / conv-rate / most-clicked, with the
   install snippet in the empty state. The rest of the dashboard is still mock.
-- Next on tracking: **variant assignment** in the SDK (deterministic bucketing per
-  `experimentId`, emitting `EXPOSURE`) so conversions attribute to a variant, then
-  wire the experiment pages + stats off `Event` / `Variant` rollups.
+- ✅ **A/B experiment launch is real.** `lib/agents/launch-experiment.ts` (Opus 4.8,
+  `read_file` loop) picks one high-leverage **copy** A/B test on a surface and opens a
+  **reviewable PR** that tags the element with `data-lead-exp="<id>"` +
+  `data-lead-b="<treatment copy>"` (control copy stays the visible default). The
+  Experiment + two `Variant`s are created first (status `DRAFT`) to mint the ids the
+  edit embeds; on PR open the experiment becomes `QUEUED`. `POST /api/experiments/launch`
+  streams `LaunchEvent` NDJSON. The PR body embeds a **rendered Before/After image** so
+  reviewers see the copy change, not just two data-attributes in the diff:
+  `lib/preview-svg.ts` builds the SVG; for **public repos** `lib/preview-png.ts` (sharp)
+  rasterizes it to PNG, which the launch agent commits into the branch
+  (`.lead/previews/experiment-<id>.png`) and embeds via `raw.githubusercontent.com` — so
+  it renders in the PR with **no public Lead deployment** to proxy. Private repos (whose
+  raw URLs need auth) fall back to `GET /api/experiments/[id]/preview.svg` (works once
+  Lead is deployed public). The experiment detail page shows the same SVG. The trigger is
+  the `LaunchExperiment` panel in the
+  onboarding Report step (seeded with the top audit opportunity) and the dashboard
+  **Live tracking** band. The SDK (`public/sdk.js`) now does **variant assignment**:
+  deterministic FNV bucketing per `experimentId`, swaps in the treatment for the B
+  cohort, emits `EXPOSURE` once, and attributes conversions to the assigned variant
+  (sessionStorage). The **flag** is `GET /api/experiments/active?key=<sdkKey>` (CORS) —
+  it serves only `RUNNING` experiments, so a test goes live the moment we flip it (and
+  stops instantly, no redeploy). `GET /api/experiments/[id]/status` auto-flips
+  `QUEUED → RUNNING` once the PR is merged (polled by the launch UI; `POST` force-
+  activates). Schema gained `QUEUED`/`CONCLUSIVE`, `Experiment.{title,split,prNumber,
+  prUrl,prBranch,targetPath}`, and `Variant.{content,weight}`.
+- Next on experiments: **stats off `Event`/`Variant` rollups** (uplift + significance)
+  and wiring the experiment list/detail pages to real data (still mock), plus
+  decision controls (ship winner / abandon) that flip status + open a follow-up PR.
 - ✅ **Setup agent + GitHub App PR writes.** `lib/agents/setup-sdk.ts` reads the repo
   (Opus 4.8, `read_file` loop), finds the global head/layout + signup/checkout
   conversions, injects the tracking `<script>` and `data-lead-conversion` markers,

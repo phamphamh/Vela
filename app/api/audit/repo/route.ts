@@ -6,6 +6,7 @@ import { type AuditEvent } from "@/lib/agents/types";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
+import { type Prisma } from "@/lib/generated/prisma/client";
 
 // The audit runs several Opus calls; give it headroom on Vercel.
 export const maxDuration = 300;
@@ -44,7 +45,7 @@ export async function POST(request: Request) {
         repoFullName: body.repoFullName,
       },
     },
-    select: { defaultBranch: true },
+    select: { id: true, defaultBranch: true },
   });
   if (!project) {
     return NextResponse.json({ error: "Repository not connected" }, { status: 404 });
@@ -62,6 +63,7 @@ export async function POST(request: Request) {
   const token = account.accessToken;
   const repoFullName = body.repoFullName;
   const branch = project.defaultBranch;
+  const projectId = project.id;
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
@@ -70,7 +72,20 @@ export async function POST(request: Request) {
         controller.enqueue(encoder.encode(JSON.stringify(event) + "\n"));
       };
       try {
-        await runAudit({ token, repoFullName, branch, onEvent: send });
+        const result = await runAudit({ token, repoFullName, branch, onEvent: send });
+        // Persist the audit so the dashboard Surfaces + opportunities work off
+        // real data (and the launch agent can act on it) without re-running.
+        const scores = result.surfaces.map((s) => s.score);
+        const avg = scores.length
+          ? Math.round(scores.reduce((n, v) => n + v, 0) / scores.length)
+          : 0;
+        await db.projectAudit.create({
+          data: {
+            projectId,
+            score: avg,
+            result: result as unknown as Prisma.InputJsonValue,
+          },
+        });
       } catch (e) {
         console.error("[audit] run failed", e);
         send({

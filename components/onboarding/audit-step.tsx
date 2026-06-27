@@ -61,7 +61,7 @@ export function AuditStep({
       setError(null);
 
       try {
-        const res = await fetch("/api/audit", {
+        const res = await fetch("/api/audit/repo", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ repoFullName }),
