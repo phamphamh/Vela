@@ -25,6 +25,10 @@ operating on the customer's own codebase.
 
 > The product name is not final. Internally we call it **lead**.
 
+**Product & dashboard spec:** see [`docs/product.md`](docs/product.md) for the
+full flow, dashboard IA, page contents, experiment lifecycle, and the locked
+decisions (PR + SDK delivery, our-own-SDK tracking, review-gated autonomy).
+
 ## Tech stack
 
 | Layer | Choice | Notes |
