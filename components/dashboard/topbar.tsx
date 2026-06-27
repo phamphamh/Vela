@@ -12,7 +12,8 @@ import {
 
 import { DashboardNav } from "@/components/dashboard/nav";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { signOut, useSession } from "@/lib/auth-client";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -56,9 +57,11 @@ function ProjectSwitcher() {
           </DropdownMenuItem>
         ))}
         <DropdownMenuSeparator />
-        <DropdownMenuItem>
-          <Plus className="size-3.5" />
-          Connect repository
+        <DropdownMenuItem asChild>
+          <Link href="/onboarding">
+            <Plus className="size-3.5" />
+            Connect repository
+          </Link>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -90,7 +93,24 @@ function MobileNav() {
   );
 }
 
+function initialsOf(name?: string | null) {
+  if (!name) return "··";
+  return name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase() ?? "")
+    .join("");
+}
+
 function UserMenu() {
+  const { data: session } = useSession();
+  const user = session?.user;
+
+  async function handleSignOut() {
+    await signOut();
+    window.location.href = "/";
+  }
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -101,26 +121,39 @@ function UserMenu() {
           aria-label="Account"
         >
           <Avatar className="size-7">
+            {user?.image && <AvatarImage src={user.image} alt="" />}
             <AvatarFallback className="bg-secondary text-xs font-medium">
-              LL
+              {initialsOf(user?.name)}
             </AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel className="flex flex-col gap-0.5">
-          <span>Lirone</span>
-          <span className="font-mono text-xs font-normal text-muted-foreground">
-            you@company.com
-          </span>
-        </DropdownMenuLabel>
+        {user ? (
+          <DropdownMenuLabel className="flex flex-col gap-0.5">
+            <span>{user.name}</span>
+            <span className="truncate font-mono text-xs font-normal text-muted-foreground">
+              {user.email}
+            </span>
+          </DropdownMenuLabel>
+        ) : (
+          <DropdownMenuLabel className="font-normal text-muted-foreground">
+            Not signed in
+          </DropdownMenuLabel>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           <Link href="/dashboard/settings">Settings</Link>
         </DropdownMenuItem>
         <DropdownMenuItem>Billing</DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem disabled>Sign out</DropdownMenuItem>
+        {user ? (
+          <DropdownMenuItem onClick={handleSignOut}>Sign out</DropdownMenuItem>
+        ) : (
+          <DropdownMenuItem asChild>
+            <Link href="/onboarding">Sign in</Link>
+          </DropdownMenuItem>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

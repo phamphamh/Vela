@@ -5,6 +5,7 @@ import {
   ActiveExperiments,
   type ActiveExperiment,
 } from "@/components/dashboard/experiment-preview";
+import { RealtimeOverview } from "@/components/dashboard/realtime-overview";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -184,6 +185,9 @@ export default function OverviewPage() {
           Run audit
         </Button>
       </div>
+
+      {/* live tracking — real data from the SDK ingest pipeline */}
+      <RealtimeOverview />
 
       {/* KPI row */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">

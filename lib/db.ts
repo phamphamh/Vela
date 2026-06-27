@@ -1,13 +1,11 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "./generated/prisma/client";
+import { requireEnv } from "./env";
 
 // Prisma 7 connects through a driver adapter. PrismaPg uses node-postgres (`pg`)
 // and works with any standard Postgres (Neon, Supabase, RDS, local, …).
 function createClient() {
-  const connectionString = process.env.DATABASE_URL;
-  if (!connectionString) {
-    throw new Error("DATABASE_URL is not set");
-  }
+  const connectionString = requireEnv("DATABASE_URL");
   const adapter = new PrismaPg({ connectionString });
   return new PrismaClient({ adapter });
 }

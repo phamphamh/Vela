@@ -3,10 +3,7 @@
 import * as React from "react";
 import {
   Check,
-  Copy,
   CreditCard,
-  Eye,
-  EyeOff,
   FolderGit2 as Github,
   KeyRound,
   Plug,
@@ -16,6 +13,7 @@ import {
   Users,
 } from "lucide-react";
 
+import { InstallSdk } from "@/components/dashboard/install-sdk";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -37,8 +35,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-const SDK_KEY = "lead_sk_live_8c2f4a91d7e0b3";
 
 const sections = [
   { id: "repo", label: "Repository", icon: Github },
@@ -92,40 +88,6 @@ function FieldRow({
         {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
       </div>
       <div className="sm:w-[280px] sm:shrink-0">{children}</div>
-    </div>
-  );
-}
-
-function SdkKeyField() {
-  const [revealed, setRevealed] = React.useState(false);
-  const [copied, setCopied] = React.useState(false);
-
-  function copy() {
-    navigator.clipboard?.writeText(SDK_KEY);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  }
-
-  return (
-    <div className="flex items-center gap-2">
-      <code className="flex h-9 min-w-0 flex-1 items-center truncate rounded-md border border-border bg-muted/40 px-3 font-mono text-xs">
-        {revealed ? SDK_KEY : "lead_sk_live_••••••••••••"}
-      </code>
-      <Button
-        size="icon"
-        variant="ghost"
-        onClick={() => setRevealed((r) => !r)}
-        aria-label={revealed ? "Hide key" : "Reveal key"}
-      >
-        {revealed ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-      </Button>
-      <Button size="icon" variant="ghost" onClick={copy} aria-label="Copy key">
-        {copied ? (
-          <Check className="size-4 text-success" />
-        ) : (
-          <Copy className="size-4" />
-        )}
-      </Button>
     </div>
   );
 }
@@ -286,44 +248,9 @@ export default function SettingsPage() {
             id="sdk"
             icon={KeyRound}
             title="SDK & tracking"
-            description="Our lightweight SDK assigns variants and emits conversion events."
+            description="Drop our lightweight script on your site to track visitors, clicks, and conversions."
           >
-            <div className="space-y-1.5">
-              <Label className="text-sm">Project SDK key</Label>
-              <SdkKeyField />
-              <p className="text-xs text-muted-foreground">
-                Used by{" "}
-                <span className="font-mono">@lead/sdk</span> to identify this
-                project. Keep it server-side where possible.
-              </p>
-            </div>
-            <Separator />
-            <div className="space-y-1.5">
-              <Label className="text-sm">Install</Label>
-              <code className="block overflow-x-auto rounded-md border border-border bg-muted/40 px-3 py-2.5 font-mono text-xs">
-                bun add @lead/sdk
-              </code>
-              <code className="block overflow-x-auto rounded-md border border-border bg-muted/40 px-3 py-2.5 font-mono text-xs leading-relaxed">
-                <span className="text-muted-foreground">
-                  {"// app/layout.tsx"}
-                </span>
-                {"\n"}import {"{ LeadProvider }"} from &quot;@lead/sdk&quot;;
-                {"\n\n"}&lt;LeadProvider projectKey=&quot;lead_sk_live_…&quot;&gt;
-                {"\n  "}&lt;App /&gt;{"\n"}&lt;/LeadProvider&gt;
-              </code>
-            </div>
-            <Separator />
-            <FieldRow
-              label="Tracking status"
-              hint="Last impression event received 2m ago."
-            >
-              <div className="flex items-center gap-2 sm:justify-end">
-                <Badge className="gap-1.5 bg-success text-success-foreground">
-                  <span className="size-1.5 animate-pulse rounded-full bg-current" />
-                  Receiving events
-                </Badge>
-              </div>
-            </FieldRow>
+            <InstallSdk />
           </SectionShell>
 
           {/* integrations */}

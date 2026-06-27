@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Lead SDK — test harness</title>
+    <style>
+      :root { color-scheme: light dark; }
+      body {
+        font: 15px/1.5 ui-sans-serif, system-ui, sans-serif;
+        max-width: 720px; margin: 40px auto; padding: 0 20px;
+        background: #f4f1ea; color: #2b2620;
+      }
+      h1 { font-size: 20px; }
+      code, pre, .mono { font-family: ui-monospace, "Geist Mono", monospace; }
+      input {
+        width: 100%; padding: 8px 10px; border: 1px solid #ccc3b5; border-radius: 6px;
+        font-family: ui-monospace, monospace; font-size: 13px; box-sizing: border-box;
+      }
+      button {
+        padding: 8px 12px; margin: 4px 6px 4px 0; border: 1px solid #d35400;
+        background: #e8703a; color: #fff; border-radius: 6px; cursor: pointer; font-size: 14px;
+      }
+      button.ghost { background: transparent; color: #2b2620; border-color: #ccc3b5; }
+      .row { margin: 14px 0; }
+      .muted { color: #8a8174; font-size: 13px; }
+      #log {
+        background: #1c1814; color: #d8cfc0; border-radius: 8px; padding: 12px;
+        font-size: 12px; max-height: 320px; overflow: auto; white-space: pre-wrap;
+      }
+      .hint { background: #fff; border: 1px solid #e6ddcf; border-radius: 8px; padding: 12px 14px; }
+    </style>
+  </head>
+  <body>
+    <h1>Lead SDK — test harness</h1>
+    <p class="muted">
+      Serve this from your app (e.g. <span class="mono">http://localhost:3000/sdk-test.html</span>),
+      paste your project SDK key, and fire events. Each batch sent to
+      <span class="mono">/api/ingest</span> is logged below — then watch the
+      dashboard's Live tracking fill in.
+    </p>
+
+    <div class="row">
+      <label class="muted" for="key">Project SDK key (from Settings → SDK &amp; tracking)</label>
+      <input id="key" placeholder="lead_pk_…" />
+    </div>
+    <div class="row">
+      <button id="load">Load SDK</button>
+      <span id="loaded" class="muted"></span>
+    </div>
+
+    <div class="row hint" id="controls" style="display: none">
+      <strong>Fire events</strong>
+      <div style="margin-top: 8px">
+        <button onclick="lead('pageview')">pageview</button>
+        <button onclick="lead('track', 'manual_click')">track click</button>
+        <button onclick="lead('conversion', 'signup')">conversion</button>
+        <button class="ghost" id="flush">flush now</button>
+      </div>
+      <div style="margin-top: 10px">
+        <span class="muted">Auto-capture (real DOM clicks):</span><br />
+        <a href="#" data-lead-event="hero_cta" onclick="return false">Link with data-lead-event</a>
+        &nbsp;·&nbsp;
+        <button class="ghost" data-lead-conversion>Button data-lead-conversion</button>
+      </div>
+    </div>
+
+    <div class="row">
+      <strong>Outgoing to /api/ingest</strong>
+      <pre id="log">(nothing sent yet)</pre>
+    </div>
+
+    <script>
+      // Instrument the network so you can see exactly what the SDK sends.
+      var logEl = document.getElementById("log");
+      var lines = [];
+      function show(via, body) {
+        try { body = JSON.stringify(JSON.parse(body), null, 2); } catch (e) {}
+        lines.unshift("[" + new Date().toLocaleTimeString() + " · " + via + "]\n" + body);
+        logEl.textContent = lines.slice(0, 12).join("\n\n");
+      }
+      var _beacon = navigator.sendBeacon && navigator.sendBeacon.bind(navigator);
+      if (_beacon) {
+        navigator.sendBeacon = function (url, data) {
+          if (String(url).indexOf("/api/ingest") > -1) {
+            if (data instanceof Blob) data.text().then(function (t) { show("beacon", t); });
+            else show("beacon", String(data));
+          }
+          return _beacon(url, data);
+        };
+      }
+      var _fetch = window.fetch.bind(window);
+      window.fetch = function (url, opts) {
+        if (String(url).indexOf("/api/ingest") > -1 && opts && opts.body) show("fetch", opts.body);
+        return _fetch(url, opts);
+      };
+
+      // Prefill key from ?key= for convenience.
+      var params = new URLSearchParams(location.search);
+      if (params.get("key")) document.getElementById("key").value = params.get("key");
+
+      document.getElementById("load").addEventListener("click", function () {
+        var key = document.getElementById("key").value.trim();
+        if (!key) { alert("Paste your SDK key first."); return; }
+        if (window.__leadLoaded) { location.reload(); return; }
+        var s = document.createElement("script");
+        s.src = "/sdk.js";
+        s.setAttribute("data-key", key);
+        s.onload = function () {
+          window.__leadLoaded = true;
+          document.getElementById("controls").style.display = "block";
+          document.getElementById("loaded").textContent = "SDK loaded — pageview already sent.";
+        };
+        document.head.appendChild(s);
+      });
+
+      document.getElementById("flush").addEventListener("click", function () {
+        // The SDK flushes unconditionally on pagehide (and every 5s on its own).
+        window.dispatchEvent(new Event("pagehide"));
+      });
+    </script>
+  </body>
+</html>

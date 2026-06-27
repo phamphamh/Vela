@@ -38,17 +38,25 @@ decisions (PR + SDK delivery, our-own-SDK tracking, review-gated autonomy).
 | UI | **shadcn/ui** + **Tailwind CSS** | Design system is TBD — see below |
 | Database | **PostgreSQL** | Hosted Postgres (e.g. Neon/Supabase Postgres) |
 | ORM | **Prisma** | Schema-first, migrations via Prisma |
-| Auth | **Clerk** *(deferred)* | **Not wired up yet** — we ship fast first. Clerk is the chosen provider when we add it. |
+| Auth | **Better Auth** (GitHub OAuth) | Wired. `lib/auth.ts` (server) + `lib/auth-client.ts` (React). Sessions/users/accounts live in our Postgres via the Prisma adapter. The GitHub OAuth token is stored on `Account.accessToken` and is how we read the customer's repos. |
 | Agent runtime | **Claude Agent SDK** | The orchestrator + codebase agents are built on Anthropic's Claude Agent SDK |
 | Package manager | **Bun** | Use `bun` for installs and scripts |
 | Deployment | **Vercel** | Web app deploys to Vercel |
 
 ### Important stack constraints
 
-- **No auth right now.** We deliberately skip authentication to ship fast. Do
-  **not** add Clerk, middleware-based route protection, or user-session gating
-  unless explicitly asked. When we do add auth, it will be **Clerk**. Design data
-  models with a future `userId` / `orgId` in mind, but don't block on it.
+- **Auth is Better Auth + GitHub OAuth.** Server instance in `lib/auth.ts`
+  (`betterAuth` + `prismaAdapter(db)`), React client in `lib/auth-client.ts`
+  (`useSession`, `signIn`, `signOut`), route handler at
+  `app/api/auth/[...all]/route.ts`. Requires `BETTER_AUTH_SECRET`,
+  `BETTER_AUTH_URL`, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` in `.env` (read via
+  `lib/env.ts` — never `process.env.*` directly). Read the user's session
+  server-side with `auth.api.getSession({ headers: await headers() })`. The GitHub
+  access token lives on `Account.accessToken`; use it to call the GitHub API.
+  **Never log the token.** Repo *writing* / PRs will later use a **GitHub App**
+  (installation id reserved on `Project.githubInstallationId`) — not the OAuth token.
+- **No blanket route protection yet.** There's no `middleware.ts`; API routes
+  self-guard via `getSession` (401). Add gating when the dashboard uses real data.
 - **Single Next.js app.** The agent orchestrator runs inside this app for now
   (API routes / route handlers / background work). If the orchestrator needs to
   become a separate long-running service later, we'll split it out then — don't
@@ -174,11 +182,45 @@ Scaffolded and building (`bun run build` passes). Done:
   driver adapter, client singleton in `lib/db.ts`.
 - ✅ "Warm Precision" design system — oklch token system (light + dark),
   `next-themes` toggle, shadcn primitives, and a live styleguide at `/`.
+- ✅ Dashboard pages (`/dashboard/*`) + onboarding flow (`/onboarding`) on the
+  design system.
+- ✅ **Better Auth + GitHub OAuth** wired (`lib/auth.ts`, `lib/auth-client.ts`,
+  `app/api/auth/[...all]`). Onboarding Connect → real GitHub sign-in; Repo step →
+  real repos from `GET /api/github/repos`; selecting one persists a `Project` via
+  `POST /api/projects`.
 
 Next steps (not yet done):
 
-- Provide a real Postgres `DATABASE_URL` in `.env` (currently the Prisma
-  placeholder) and run `bun run db:migrate` to create the first migration.
-- Stand up the Claude Agent SDK orchestrator skeleton in `lib/agents/`.
-- Build the connect-GitHub flow and the experiments dashboard.
-- Add Clerk auth when we're ready (currently deferred).
+- Provide a real Postgres `DATABASE_URL` in `.env` (local: `postgresql://localhost:5432/lead`)
+  and run `bun run db:migrate` to create the first migration. Register a GitHub
+  OAuth App and set the auth env vars (see the Auth constraint above).
+- ✅ **Codebase audit is real.** `lib/agents/audit.ts` runs a discovery agent
+  (Opus 4.8, agentic `read_file` tool-use loop over the GitHub tree) to locate
+  the landing/onboarding/paywall surfaces, then per-surface analyzer agents
+  (parallel, structured outputs) score each and propose changes. `lib/github.ts`
+  reads the repo over the REST API (no clone). `POST /api/audit` streams progress
+  as NDJSON (`AuditEvent`); the onboarding Audit → Report steps consume it.
+  Requires `ANTHROPIC_API_KEY` in `.env`.
+- Persist audit results (e.g. as `Experiment` drafts) so the dashboard and the
+  report's "Draft" buttons work off real data instead of re-running the audit.
+- ✅ **Visitor tracking is real.** Our own SDK (`public/sdk.js`) auto-captures
+  pageviews + clicks (and `data-lead-conversion` / `lead('conversion', …)`) on the
+  customer's site and beacons batches to `POST /api/ingest` (CORS, keyed by
+  `Project.sdkKey`). Events land in the `Event` table (+ `Variant` impression/
+  conversion rollups). `lib/metrics.ts` aggregates them; the dashboard home's
+  **Live tracking** band (`components/dashboard/realtime-overview.tsx`) shows real
+  visitors / pageviews / clicks / conversions / conv-rate / most-clicked, with the
+  install snippet in the empty state. The rest of the dashboard is still mock.
+- Next on tracking: **variant assignment** in the SDK (deterministic bucketing per
+  `experimentId`, emitting `EXPOSURE`) so conversions attribute to a variant, then
+  wire the experiment pages + stats off `Event` / `Variant` rollups.
+- ✅ **Setup agent + GitHub App PR writes.** `lib/agents/setup-sdk.ts` reads the repo
+  (Opus 4.8, `read_file` loop), finds the global head/layout + signup/checkout
+  conversions, injects the tracking `<script>` and `data-lead-conversion` markers,
+  and opens a **reviewable PR**. Writes use a **GitHub App installation token**
+  (`lib/github-app.ts` — RS256 JWT from `leadhackathonyc.private-key.pem`, app id +
+  installation derived from `/user/installations`; reads still use the OAuth token).
+  Multi-file commit + PR helpers in `lib/github.ts`. `POST /api/setup-sdk` streams
+  `SetupEvent` NDJSON; trigger is the "Set it up for me → Open a PR" panel in the
+  Settings install card. Note: the injected snippet URL is `BETTER_AUTH_URL` (set a
+  public Lead URL for prod) and the PR is review-gated.

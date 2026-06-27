@@ -1,9 +1,10 @@
 // Prisma schema for "lead".
 // Docs: https://pris.ly/d/prisma-schema
 //
-// This is an early skeleton. Auth is deferred (Clerk later), so ownership is
-// modeled with nullable `clerkUserId` / `clerkOrgId` string fields we can wire
-// up when auth lands — no auth tables here yet.
+// Auth is handled by Better Auth (GitHub OAuth). The User/Session/Account/
+// Verification models below are the Better Auth core schema; the GitHub OAuth
+// access token lives on `Account.accessToken` and is what we use to read the
+// customer's repos. Project ownership is a real `userId` relation.
 
 generator client {
   provider = "prisma-client"
@@ -15,6 +16,79 @@ datasource db {
   // Prisma 7: the connection URL lives in prisma.config.ts (CLI) and is passed
   // to PrismaClient via a driver adapter at runtime (see lib/db.ts).
 }
+
+/* --- Better Auth core models ------------------------------------------ */
+
+/// An authenticated user (identity comes from GitHub via Better Auth).
+model User {
+  id            String  @id
+  name          String
+  email         String  @unique
+  emailVerified Boolean @default(false)
+  image         String?
+
+  sessions Session[]
+  accounts Account[]
+  projects Project[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("user")
+}
+
+/// A Better Auth session.
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("session")
+}
+
+/// A linked OAuth account. For GitHub, `accessToken` is the token we use to
+/// call the GitHub API on the user's behalf. Never log this value.
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("account")
+}
+
+/// Better Auth verification tokens (email, etc.).
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("verification")
+}
+
+/* --- domain models ---------------------------------------------------- */
 
 /// Which conversion surface an experiment targets.
 enum Surface {
@@ -41,16 +115,27 @@ model Project {
   name         String
   repoFullName String // e.g. "acme/web"
   repoUrl      String
-  // Deferred-auth ownership — populated once Clerk is wired up.
-  clerkUserId  String?
-  clerkOrgId   String?
+  githubRepoId String? // GitHub's numeric repo id, stored as string
+  defaultBranch String @default("main")
+  private      Boolean @default(false)
+  // Public key the tracking SDK sends with every event batch (see /api/ingest).
+  // Nullable so projects created before tracking existed backfill lazily.
+  sdkKey       String? @unique
+  // Forward-compat: set once a GitHub App is installed for PR-writing.
+  githubInstallationId String?
+
+  // Ownership.
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
 
   experiments Experiment[]
+  events      Event[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([clerkOrgId])
+  @@unique([userId, repoFullName])
+  @@index([userId])
 }
 
 /// A single A/B test the orchestrator runs on a project's surface.
@@ -83,7 +168,7 @@ model Variant {
   // Reference to the change the agent produced (e.g. a PR / branch / patch ref).
   changeRef    String?
 
-  // Lightweight rollup metrics; detailed events live in analytics, not here.
+  // Lightweight rollup metrics; detailed events live in the Event table.
   impressions Int @default(0)
   conversions Int @default(0)
 
@@ -91,4 +176,40 @@ model Variant {
   updatedAt DateTime @updatedAt
 
   @@index([experimentId])
+}
+
+/// What a visitor did, as emitted by the tracking SDK on the customer's site.
+enum EventType {
+  PAGEVIEW   // a page was viewed
+  CLICK      // a link/button (or [data-lead-event]) was clicked
+  CONVERSION // a goal was reached (signup, checkout, [data-lead-conversion])
+  EXPOSURE   // a visitor was shown a specific experiment variant
+}
+
+/// A single raw tracking event. High-volume, append-only. Aggregations for the
+/// dashboard live in lib/metrics.ts; per-variant rollups live on Variant.
+model Event {
+  id        String    @id @default(cuid())
+  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String
+  type      EventType
+
+  // Anonymous, first-party visitor + session identifiers (no PII).
+  visitorId String
+  sessionId String?
+
+  // Context. `name` is the click label / goal name; experiment+variant are set
+  // on EXPOSURE/CONVERSION so we can attribute conversions to a variant.
+  name         String?
+  path         String?
+  referrer     String?
+  experimentId String?
+  variantId    String?
+  meta         Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([projectId, createdAt])
+  @@index([projectId, type, createdAt])
+  @@index([projectId, visitorId])
 }
