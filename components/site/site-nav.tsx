@@ -1,7 +1,6 @@
 import Link from "next/link"
 import { ArrowRight, RefreshCw } from "lucide-react"
 
-import { BOOKING_URL } from "@/lib/config"
 import { Button } from "@/components/ui/button"
 
 const NAV_LINKS = [
@@ -48,10 +47,10 @@ export function SiteNav() {
             Free audit
           </Link>
           <Button asChild size="lg">
-            <a href={BOOKING_URL} target="_blank" rel="noopener noreferrer">
-              Book a demo
+            <Link href="/onboarding">
+              Get started
               <ArrowRight data-icon="inline-end" />
-            </a>
+            </Link>
           </Button>
         </div>
       </div>

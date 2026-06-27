@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { type AuditResponse, type AuditResult } from "@/lib/audit/types";
-import { BOOKING_URL } from "@/lib/config";
 import { track } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 
@@ -417,11 +416,9 @@ export function AuditTool() {
                 className="h-[42px] rounded-lg px-[18px] text-[14.5px] font-semibold"
               >
                 <a
-                  href={BOOKING_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  href="/onboarding"
                   onClick={() =>
-                    track("book_demo_clicked", {
+                    track("onboarding_started", {
                       source: "audit_result",
                       url: resultUrl,
                       score: result.score,

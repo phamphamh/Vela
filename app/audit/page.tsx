@@ -15,7 +15,6 @@ import { AuditTool } from "@/components/audit/audit-tool";
 import { SiteNav } from "@/components/site/site-nav";
 import { SiteFooter } from "@/components/site/site-footer";
 import { Button } from "@/components/ui/button";
-import { BOOKING_URL } from "@/lib/config";
 
 export const metadata: Metadata = {
   title: "Free CRO audit — find out why your landing isn't converting | Vela",
@@ -311,8 +310,8 @@ export default function AuditPage() {
               </p>
               <div className="flex flex-wrap justify-center gap-3">
                 <Button asChild size="lg" className="h-12 px-6 text-[15.5px]">
-                  <a href={BOOKING_URL} target="_blank" rel="noopener noreferrer">
-                    Book a demo
+                  <a href="/onboarding">
+                    Get started
                     <ArrowRight data-icon="inline-end" />
                   </a>
                 </Button>

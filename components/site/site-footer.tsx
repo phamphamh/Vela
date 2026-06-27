@@ -1,8 +1,6 @@
 import Link from "next/link"
 import { RefreshCw } from "lucide-react"
 
-import { BOOKING_URL } from "@/lib/config"
-
 const PRODUCT_LINKS = [
   { href: "/#how", label: "How it works", external: false },
   { href: "/#product", label: "The product", external: false },
@@ -10,7 +8,7 @@ const PRODUCT_LINKS = [
 ]
 
 const COMPANY_LINKS = [
-  { href: BOOKING_URL, label: "Book a demo", external: true },
+  { href: "/onboarding", label: "Get started", external: false },
   { href: "/#faq", label: "FAQ", external: false },
   { href: "/#compare", label: "Comparison", external: false },
 ]

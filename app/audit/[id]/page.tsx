@@ -12,7 +12,6 @@ import {
   scoreBand,
   scoreBandLabel,
 } from "@/lib/audit/types";
-import { BOOKING_URL } from "@/lib/config";
 import { db } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -110,10 +109,10 @@ export default async function AuditSharePage({ params }: PageProps) {
           {/* CTAs */}
           <div className="mt-7 flex flex-wrap items-center gap-3">
             <Button asChild size="lg" className="h-12 px-6 text-[15px]">
-              <a href={BOOKING_URL} target="_blank" rel="noopener noreferrer">
+              <Link href="/onboarding">
                 Have the agent fix this
                 <ArrowRight data-icon="inline-end" />
-              </a>
+              </Link>
             </Button>
             <Button asChild variant="outline" size="lg" className="h-12 px-5 text-[15px]">
               <Link href="/audit">

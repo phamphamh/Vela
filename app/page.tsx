@@ -13,7 +13,6 @@ import {
   TrendingUp,
 } from "lucide-react"
 
-import { BOOKING_URL } from "@/lib/config"
 import { Button } from "@/components/ui/button"
 import { Faq } from "@/components/marketing/faq"
 import { HeroMetric } from "@/components/marketing/hero-metric"
@@ -102,10 +101,10 @@ export default function Home() {
             </p>
             <div className="mb-[22px] flex flex-wrap gap-3">
               <Button asChild size="lg" className="h-[46px] px-[22px] text-[15px]">
-                <a href={BOOKING_URL} target="_blank" rel="noopener noreferrer">
-                  Book a demo
+                <Link href="/onboarding">
+                  Get started
                   <ArrowRight data-icon="inline-end" />
-                </a>
+                </Link>
               </Button>
               <Button
                 asChild
@@ -805,10 +804,10 @@ export default function Home() {
             </p>
             <div className="flex flex-wrap justify-center gap-3">
               <Button asChild size="lg" className="h-12 px-6 text-[15.5px]">
-                <a href={BOOKING_URL} target="_blank" rel="noopener noreferrer">
-                  Book a demo
+                <Link href="/onboarding">
+                  Get started
                   <ArrowRight data-icon="inline-end" />
-                </a>
+                </Link>
               </Button>
               <Link
                 href="/audit"
