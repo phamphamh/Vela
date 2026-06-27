@@ -1,4 +1,4 @@
-2026-06-27T15:33:05.722Z launch: Executable doesn't exist at /Users/youyoutucoco/Library/Caches/ms-playwright/chromium_headless_shell-1217/chrome-headless-shell-mac-arm64/chrome-headless-shell
+2026-06-27T17:44:23.396Z launch: Executable doesn't exist at /Users/youyoutucoco/Library/Caches/ms-playwright/chromium_headless_shell-1217/chrome-headless-shell-mac-arm64/chrome-headless-shell
 ╔════════════════════════════════════════════════════════════╗
 ║ Looks like Playwright was just installed or updated.       ║
 ║ Please run the following command to download new browsers: ║
