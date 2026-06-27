@@ -1,0 +1,94 @@
+// Prisma schema for "lead".
+// Docs: https://pris.ly/d/prisma-schema
+//
+// This is an early skeleton. Auth is deferred (Clerk later), so ownership is
+// modeled with nullable `clerkUserId` / `clerkOrgId` string fields we can wire
+// up when auth lands — no auth tables here yet.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  // Prisma 7: the connection URL lives in prisma.config.ts (CLI) and is passed
+  // to PrismaClient via a driver adapter at runtime (see lib/db.ts).
+}
+
+/// Which conversion surface an experiment targets.
+enum Surface {
+  LANDING
+  ONBOARDING
+  PAYWALL
+}
+
+enum ExperimentStatus {
+  DRAFT
+  RUNNING
+  COMPLETED
+  ABANDONED
+}
+
+enum VariantKind {
+  CONTROL
+  TREATMENT
+}
+
+/// A customer's connected GitHub repository that we analyze and optimize.
+model Project {
+  id           String  @id @default(cuid())
+  name         String
+  repoFullName String // e.g. "acme/web"
+  repoUrl      String
+  // Deferred-auth ownership — populated once Clerk is wired up.
+  clerkUserId  String?
+  clerkOrgId   String?
+
+  experiments Experiment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([clerkOrgId])
+}
+
+/// A single A/B test the orchestrator runs on a project's surface.
+model Experiment {
+  id         String           @id @default(cuid())
+  project    Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId  String
+  surface    Surface
+  status     ExperimentStatus @default(DRAFT)
+  hypothesis String?
+
+  variants Variant[]
+
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([projectId])
+  @@index([status])
+}
+
+/// A variant within an experiment (control or a generated treatment).
+model Variant {
+  id           String      @id @default(cuid())
+  experiment   Experiment  @relation(fields: [experimentId], references: [id], onDelete: Cascade)
+  experimentId String
+  kind         VariantKind
+  label        String
+  // Reference to the change the agent produced (e.g. a PR / branch / patch ref).
+  changeRef    String?
+
+  // Lightweight rollup metrics; detailed events live in analytics, not here.
+  impressions Int @default(0)
+  conversions Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([experimentId])
+}
