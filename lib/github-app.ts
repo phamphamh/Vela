@@ -21,6 +21,20 @@ function b64url(input: Buffer | string): string {
     .replace(/\//g, "_");
 }
 
+/**
+ * The App private key. Prefer the inline env var GITHUB_APP_PRIVATE_KEY (so the
+ * key can live in the server's environment — no file to ship on a VPS / in a
+ * container); `\n`-escaped one-line values are supported. Fall back to reading
+ * the PEM file at GITHUB_APP_PRIVATE_KEY_PATH (the local-dev default).
+ */
+function readPrivateKey(): string {
+  const inline = env.GITHUB_APP_PRIVATE_KEY;
+  if (inline && inline.trim()) {
+    return inline.includes("\\n") ? inline.replace(/\\n/g, "\n") : inline;
+  }
+  return readFileSync(env.GITHUB_APP_PRIVATE_KEY_PATH, "utf8");
+}
+
 /** Build a 10-minute App JWT signed with the App private key (RS256). */
 function appJwt(appId: number): string {
   const now = Math.floor(Date.now() / 1000);
@@ -28,9 +42,8 @@ function appJwt(appId: number): string {
   const payload = b64url(
     JSON.stringify({ iat: now - 60, exp: now + 540, iss: appId }),
   );
-  const pem = readFileSync(env.GITHUB_APP_PRIVATE_KEY_PATH, "utf8");
   const sig = b64url(
-    createSign("RSA-SHA256").update(`${header}.${payload}`).sign(pem),
+    createSign("RSA-SHA256").update(`${header}.${payload}`).sign(readPrivateKey()),
   );
   return `${header}.${payload}.${sig}`;
 }

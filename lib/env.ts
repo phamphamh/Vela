@@ -23,6 +23,9 @@ export const env = {
   GITHUB_CLIENT_SECRET: read("GITHUB_CLIENT_SECRET"),
   GITHUB_APP_ID: read("GITHUB_APP_ID"),
   GITHUB_APP_SLUG: read("GITHUB_APP_SLUG") || "leadhackathonyc",
+  // The App private key, inline (preferred on a VPS/container — `\n`-escaped PEM
+  // ok). If empty, we read the PEM file at GITHUB_APP_PRIVATE_KEY_PATH instead.
+  GITHUB_APP_PRIVATE_KEY: read("GITHUB_APP_PRIVATE_KEY"),
   GITHUB_APP_PRIVATE_KEY_PATH:
     read("GITHUB_APP_PRIVATE_KEY_PATH") || "./leadhackathonyc.private-key.pem",
 } as const;
