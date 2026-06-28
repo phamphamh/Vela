@@ -2,7 +2,7 @@
 
 > Built for the **Unaite × Y Combinator** hackathon.
 >
-> **🔗 Live app: [lead.159.69.41.115.sslip.io](https://lead.159.69.41.115.sslip.io)** · **📅 Book a demo: [cal.com/youssefb/test-easycro](https://cal.com/youssefb/test-easycro)**
+> **🔗 Live app: [lead.159.69.41.115.sslip.io](https://lead.159.69.41.115.sslip.io)** (https://cal.com/youssefb/test-easycro)**
 
 Vela helps companies that own SaaS products ship **high-converting landing pages,
 onboarding flows, and paywalls — automatically**. You connect your GitHub repo, an
