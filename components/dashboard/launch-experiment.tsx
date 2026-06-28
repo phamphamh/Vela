@@ -30,11 +30,18 @@ const SURFACE_LABEL: Record<SurfaceKey, string> = {
 export function LaunchExperiment({
   hint,
   className,
+  refresh = true,
 }: {
   hint?: LaunchHint;
   className?: string;
+  // Whether the launch should call router.refresh() on progress. True on the
+  // dashboard (refreshes the server-rendered experiment lists); MUST be false in
+  // the onboarding flow, where the page is driven by local step state — a refresh
+  // there resets the wizard back to the start.
+  refresh?: boolean;
 }) {
-  const { state, step, proposal, done, error, run, activateNow } = useLaunch();
+  const { state, step, proposal, done, error, run, activateNow } =
+    useLaunch({ refresh });
 
   return (
     <div

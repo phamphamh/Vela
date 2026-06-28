@@ -223,6 +223,7 @@ export function ReportStep({
       {surfaces.length > 0 && (
         <div className="space-y-3">
           <LaunchExperiment
+            refresh={false}
             hint={
               topOpportunity
                 ? {

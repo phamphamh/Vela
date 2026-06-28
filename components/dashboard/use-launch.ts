@@ -45,8 +45,15 @@ export type LaunchState = "idle" | "running" | "queued" | "live" | "error";
  * it opens (POST /api/experiments/launch), then polls the experiment status so
  * the UI flips to "live" the moment the PR is merged + deployed.
  */
-export function useLaunch() {
+export function useLaunch(options?: { refresh?: boolean }) {
+  const refreshEnabled = options?.refresh ?? true;
   const router = useRouter();
+  // router.refresh() re-fetches server components. On the dashboard that's how
+  // the experiment lists update; in the onboarding wizard (driven by local step
+  // state) it resets the flow to the start, so it's disabled there.
+  const refresh = React.useCallback(() => {
+    if (refreshEnabled) router.refresh();
+  }, [refreshEnabled, router]);
   const [state, setState] = React.useState<LaunchState>("idle");
   const [step, setStep] = React.useState("");
   const [proposal, setProposal] = React.useState<Proposal | null>(null);
@@ -72,14 +79,14 @@ export function useLaunch() {
           if (data.live) {
             stopPolling();
             setState("live");
-            router.refresh();
+            refresh();
           }
         } catch {
           /* keep polling */
         }
       }, 4000);
     },
-    [router, stopPolling],
+    [refresh, stopPolling],
   );
 
   const activateNow = React.useCallback(async () => {
@@ -90,12 +97,12 @@ export function useLaunch() {
       if (data.live) {
         stopPolling();
         setState("live");
-        router.refresh();
+        refresh();
       }
     } catch {
       /* ignore */
     }
-  }, [done, router, stopPolling]);
+  }, [done, refresh, stopPolling]);
 
   const run = React.useCallback(
     async (hint?: LaunchHint) => {
@@ -134,7 +141,7 @@ export function useLaunch() {
               setDone(e);
               setState("queued");
               startPolling(e.experimentId);
-              router.refresh();
+              refresh();
             } else if (e.type === "error") {
               setError(e.message);
               setState("error");
@@ -146,7 +153,7 @@ export function useLaunch() {
         setState("error");
       }
     },
-    [router, startPolling],
+    [refresh, startPolling],
   );
 
   return { state, step, proposal, done, error, run, activateNow };
