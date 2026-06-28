@@ -236,7 +236,7 @@ export default function Home() {
       {/* ============ TRUST STRIP ============ */}
       <div className="border-y border-border bg-muted/55">
         <div className="mx-auto flex max-w-[1160px] flex-wrap items-center justify-center gap-x-[22px] gap-y-3 px-6 py-[18px]">
-          <span className="font-mono text-xs uppercase tracking-[0.05em] text-muted-foreground">
+          <span data-lead-exp="cmqxkpyay00071dpepaitycqm" data-lead-b="Growth teams shipping CRO wins with Vela" className="font-mono text-xs uppercase tracking-[0.05em] text-muted-foreground">
             Growth teams already dogfooding
           </span>
           <div className="flex flex-wrap items-center gap-x-[26px] gap-y-2 text-base font-semibold tracking-tight opacity-60">
