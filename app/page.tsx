@@ -112,7 +112,7 @@ export default function Home() {
                 size="lg"
                 className="h-[46px] px-[18px] text-[15px] hover:border-primary"
               >
-                <Link href="/audit" data-cta="free-audit">Audit my landing — free</Link>
+                <Link href="/audit" data-cta="free-audit" data-lead-exp="cmqxqid7100011fpdl6v5qzmi" data-lead-b="See what's blocking conversions — free">Audit my landing — free</Link>
               </Button>
             </div>
             <div className="flex flex-wrap items-center gap-4 text-[12.5px] text-muted-foreground">
