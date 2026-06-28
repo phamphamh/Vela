@@ -402,7 +402,7 @@ export async function runLaunch(args: RunArgs): Promise<void> {
 
     // 4. Commit + open the PR via the GitHub App installation token.
     onEvent({ type: "status", label: "Opening pull request", progress: 82 });
-    const installationToken = await getInstallationToken(userToken);
+    const installationToken = await getInstallationToken(userToken, repoFullName);
     const pr = await commitFilesAndOpenPr(installationToken, repoFullName, {
       baseBranch: branch,
       newBranch,

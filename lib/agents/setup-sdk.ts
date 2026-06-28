@@ -296,7 +296,7 @@ export async function runSdkSetup(args: RunArgs): Promise<void> {
 
   // 3. Commit + open the PR via the GitHub App installation token.
   onEvent({ type: "status", label: "Opening pull request", progress: 85 });
-  const installationToken = await getInstallationToken(userToken);
+  const installationToken = await getInstallationToken(userToken, repoFullName);
   const files = [...working.entries()].map(([path, content]) => ({ path, content }));
   const newBranch = `vela/setup-tracking-${Date.now().toString(36)}`;
 

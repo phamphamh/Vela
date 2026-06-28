@@ -57,14 +57,26 @@ function appJwt(appId: number): string {
   return `${header}.${payload}.${sig}`;
 }
 
-type Installation = { id: number; app_id: number; app_slug: string };
+type Installation = {
+  id: number;
+  app_id: number;
+  app_slug: string;
+  account: { login: string } | null;
+};
 
 /**
  * Mint an installation access token (repo write scope) for the App installation
- * the given user can access. `userToken` is the user's GitHub OAuth token, used
- * only to resolve which installation to use.
+ * that owns the target repo. `userToken` is the user's GitHub OAuth token, used
+ * only to resolve which installation to use. `repoFullName` ("owner/name") is
+ * required to pick the RIGHT installation: a user can access several
+ * installations of the App (their own + any where they're a collaborator), and a
+ * token is scoped to a single installation — using the wrong one yields
+ * "Resource not accessible by integration" (403) on write.
  */
-export async function getInstallationToken(userToken: string): Promise<string> {
+export async function getInstallationToken(
+  userToken: string,
+  repoFullName?: string,
+): Promise<string> {
   const instRes = await fetch(`${GH}/user/installations?per_page=100`, {
     headers: {
       Authorization: `Bearer ${userToken}`,
@@ -79,11 +91,25 @@ export async function getInstallationToken(userToken: string): Promise<string> {
   const { installations } = (await instRes.json()) as {
     installations: Installation[];
   };
+  const ours = (installations ?? []).filter(
+    (i) => i.app_slug === env.GITHUB_APP_SLUG,
+  );
+  const pool = ours.length ? ours : (installations ?? []);
+
+  // Prefer the installation whose account owns the target repo; only then fall
+  // back to the first available one.
+  const owner = repoFullName?.split("/")[0]?.toLowerCase();
   const inst =
-    installations?.find((i) => i.app_slug === env.GITHUB_APP_SLUG) ??
-    installations?.[0];
+    (owner
+      ? pool.find((i) => i.account?.login?.toLowerCase() === owner)
+      : undefined) ?? pool[0];
   if (!inst) {
     throw new Error("The Vela GitHub App is not installed on this account.");
+  }
+  if (owner && inst.account?.login?.toLowerCase() !== owner) {
+    throw new Error(
+      `The Vela GitHub App isn't installed on "${owner}". Install it on that account/repo to open PRs.`,
+    );
   }
 
   const jwt = appJwt(inst.app_id);
